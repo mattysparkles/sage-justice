@@ -18,6 +18,7 @@ from scheduler.schedule_engine import ReviewScheduler
 from proxy.manager import ProxyManager
 from gui.proxy_manager_gui import ProxyManagerFrame
 from gui.template_manager_gui import TemplateManagerFrame
+from core.queue_manager import JobQueueManager
 
 SETTINGS_PATH = Path("config/settings.local.json")
 DEFAULT_SETTINGS_PATH = Path("config/settings.json")
@@ -36,6 +37,7 @@ class GuardianDeck(tk.Tk):
         self.title("Guardian Deck")
         self.geometry("900x700")
         self.scheduler = ReviewScheduler()
+        self.job_manager = JobQueueManager()
         self.create_widgets()
 
     # --- UI SETUP -----------------------------------------------------
@@ -52,6 +54,7 @@ class GuardianDeck(tk.Tk):
             "Proxies": self.create_proxy_tab,
             "Sites": self.create_sites_tab,
             "Schedule": self.create_scheduler_tab,
+            "Jobs": self.create_jobs_tab,
             "Logs": self.create_logs_tab,
             "Settings": self.create_settings_tab,
         }
@@ -396,6 +399,66 @@ class GuardianDeck(tk.Tk):
     def stop_scheduler(self) -> None:
         # ReviewScheduler has no hard stop; flag is informational only
         self.scheduler_status.config(text="Inactive", foreground="red")
+
+    # --- JOBS --------------------------------------------------------
+    def create_jobs_tab(self, frame: ttk.Frame) -> None:
+        controls = ttk.Frame(frame)
+        controls.pack(fill="x", pady=5)
+        self.show_failed_var = tk.BooleanVar()
+        ttk.Checkbutton(
+            controls,
+            text="Show only failed",
+            variable=self.show_failed_var,
+            command=self.refresh_jobs_view,
+        ).pack(side="left")
+        ttk.Button(controls, text="Retry Selected", command=self.retry_selected_job).pack(
+            side="left", padx=5
+        )
+        ttk.Button(controls, text="Refresh", command=self.refresh_jobs_view).pack(
+            side="right"
+        )
+
+        columns = ("job_id", "site", "status", "scheduled")
+        self.jobs_tree = ttk.Treeview(frame, columns=columns, show="headings")
+        headings = ["Job ID", "Site", "Status", "Time Scheduled"]
+        for col, head in zip(columns, headings):
+            self.jobs_tree.heading(col, text=head)
+            self.jobs_tree.column(col, anchor="center")
+        self.jobs_tree.pack(fill="both", expand=True, padx=5, pady=5)
+
+        # color coding
+        self.jobs_tree.tag_configure("Pending", foreground="orange")
+        self.jobs_tree.tag_configure("Running", foreground="blue")
+        self.jobs_tree.tag_configure("Posted", foreground="green")
+        self.jobs_tree.tag_configure("Failed", foreground="red")
+
+        self.refresh_jobs_view()
+
+    def refresh_jobs_view(self) -> None:
+        self.job_manager.load_queue()
+        for item in self.jobs_tree.get_children():
+            self.jobs_tree.delete(item)
+        for job in self.job_manager.queue:
+            if self.show_failed_var.get() and job["status"] != "Failed":
+                continue
+            sched = datetime.fromtimestamp(job["scheduled_time"]).strftime(
+                "%Y-%m-%d %H:%M:%S"
+            )
+            self.jobs_tree.insert(
+                "",
+                "end",
+                values=(job["job_id"], job["site_name"], job["status"], sched),
+                tags=(job["status"],),
+            )
+        if hasattr(self, "_jobs_refresh_id"):
+            self.after_cancel(self._jobs_refresh_id)
+        self._jobs_refresh_id = self.after(3000, self.refresh_jobs_view)
+
+    def retry_selected_job(self) -> None:
+        for item in self.jobs_tree.selection():
+            job_id = self.jobs_tree.item(item, "values")[0]
+            self.job_manager.mark_job_as(job_id, "Pending")
+        self.refresh_jobs_view()
 
     # --- LOGS ---------------------------------------------------------
     def create_logs_tab(self, frame: ttk.Frame) -> None:
