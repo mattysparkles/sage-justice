@@ -1,0 +1,5 @@
+{
+  "agent_name": "JusticeAgent001",
+  "heartbeat_interval": 3600,
+  "log_to_cloud": false
+}

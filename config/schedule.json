@@ -1,0 +1,9 @@
+
+[
+  {
+    "site": "Google",
+    "prompt": "Negative review of attorney based on missed filings and lack of communication.",
+    "interval_minutes": 1440,
+    "next_run": "2025-08-27T18:00:00"
+  }
+]
