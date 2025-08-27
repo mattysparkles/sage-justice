@@ -1,4 +1,5 @@
 import openai
+import random
 import time
 
 from core.api_utils import get_openai_api_key
@@ -10,11 +11,26 @@ openai.api_key = get_openai_api_key()
 
 
 tones = {
-    "professional": "Write in a calm, factual tone suitable for a business or legal audience.",
-    "emotional": "Write with raw, personal emotion and frustration.",
-    "rhetorical": "Use rhetorical questions and sarcasm to emphasize injustice.",
-    "legalese": "Write using formal legal language and ethical violations.",
-    "outraged": "Write with high-impact, accusatory language.",
+    "professional": [
+        "Write in a calm, factual tone suitable for a business or legal audience.",
+        "Compose using measured, objective language appropriate for professionals.",
+    ],
+    "emotional": [
+        "Write with raw, personal emotion and frustration.",
+        "Express heartfelt anger and disappointment in a personal manner.",
+    ],
+    "rhetorical": [
+        "Use rhetorical questions and sarcasm to emphasize injustice.",
+        "Pose pointed questions and sly sarcasm to underline the unfairness.",
+    ],
+    "legalese": [
+        "Write using formal legal language and ethical violations.",
+        "Frame the complaint in precise legal terminology and cite ethical breaches.",
+    ],
+    "outraged": [
+        "Write with high-impact, accusatory language.",
+        "Use forceful, indignant language that squarely assigns blame.",
+    ],
 }
 
 
@@ -31,10 +47,12 @@ def _generate_single_review(prompt, tone_prompt):
 
 
 def generate_styled_reviews(prompt, count=5, tone="professional"):
-    tone_prompt = tones.get(tone, tones["professional"])
-
     responses = []
     for _ in range(count):
+        current_tone = random.choice(list(tones.keys())) if tone == "random" else tone
+        tone_prompts = tones.get(current_tone, tones["professional"])
+        tone_prompt = random.choice(tone_prompts)
+
         try:
             response = _generate_single_review(prompt, tone_prompt)
             review = response["choices"][0]["message"]["content"]
