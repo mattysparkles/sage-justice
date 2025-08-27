@@ -1,10 +1,17 @@
-import json
-import random
+from __future__ import annotations
 
-def load_accounts(file_path="accounts/accounts.json"):
-    with open(file_path) as f:
-        return json.load(f)
+"""Account utilities backed by the central database."""
 
-def get_random_account():
-    accounts = load_accounts()
-    return random.choice(accounts)
+from . import database
+
+
+def load_accounts() -> list[dict]:
+    return database.get_all_accounts()
+
+
+def get_random_account() -> dict | None:
+    return database.get_available_account()
+
+
+def mark_account_failed(account_id: int) -> None:
+    database.mark_account_failed(account_id)

@@ -1,9 +1,19 @@
-import random
+from __future__ import annotations
 
-def load_proxies(file_path="config/proxies.txt"):
-    with open(file_path) as f:
-        return [line.strip() for line in f if line.strip()]
+"""Backward compatible proxy utilities using the central database."""
 
-def get_random_proxy():
-    proxies = load_proxies()
-    return random.choice(proxies)
+from . import database
+
+
+def load_proxies(file_path: str | None = None) -> list[str]:
+    """Return all proxies stored in the database."""
+    with database.get_connection() as conn:
+        rows = conn.execute("SELECT ip_address, port FROM proxies").fetchall()
+    return [f"{r['ip_address']}:{r['port']}" for r in rows]
+
+
+def get_random_proxy() -> str | None:
+    proxy = database.fetch_proxy()
+    if proxy:
+        return f"{proxy['ip_address']}:{proxy['port']}"
+    return None

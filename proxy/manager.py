@@ -1,42 +1,18 @@
-import os
-from typing import List
+from __future__ import annotations
+
+from typing import Optional
+
+from core import database
 
 
 class ProxyManager:
-    """Manage list of proxies with persistence to disk."""
+    """Retrieve proxies from the SQLite database."""
 
-    def __init__(self, path: str):
-        self.path = path
-        self.proxies: List[str] = []
-        self._load()
+    def __init__(self) -> None:
+        pass
 
-    def _load(self) -> None:
-        if os.path.exists(self.path):
-            try:
-                with open(self.path, 'r', encoding='utf-8') as f:
-                    self.proxies = [line.strip() for line in f if line.strip()]
-            except Exception:
-                # If file is corrupt or unreadable, start with empty list
-                self.proxies = []
-        else:
-            self.proxies = []
-
-    def _save(self) -> None:
-        try:
-            with open(self.path, 'w', encoding='utf-8') as f:
-                for proxy in self.proxies:
-                    f.write(proxy + '\n')
-        except Exception as e:
-            # Raise to allow calling code to handle
-            raise e
-
-    def add_proxy(self, proxy: str) -> None:
-        proxy = proxy.strip()
-        if proxy and proxy not in self.proxies:
-            self.proxies.append(proxy)
-            self._save()
-
-    def remove_proxy(self, proxy: str) -> None:
-        if proxy in self.proxies:
-            self.proxies.remove(proxy)
-            self._save()
+    def get_proxy(self) -> Optional[str]:
+        proxy = database.fetch_proxy()
+        if proxy:
+            return f"{proxy['ip_address']}:{proxy['port']}"
+        return None
