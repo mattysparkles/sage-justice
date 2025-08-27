@@ -4,3 +4,5 @@ openai
 deathbycaptcha
 requests
 webdriver-manager
+
+undetected-chromedriver
