@@ -71,6 +71,16 @@ class GuardianDeck(tk.Tk):
         ttk.Checkbutton(options, text="Rewrite", variable=self.rewrite_var).pack(side="left", padx=5)
         ttk.Button(options, text="Generate", command=self.run_generation).pack(side="left", padx=5)
 
+        tone_frame = ttk.Frame(frame)
+        tone_frame.pack(fill="x", padx=10, pady=5)
+        ttk.Label(tone_frame, text="Formality").grid(row=0, column=0, sticky="w")
+        self.formality_var = tk.IntVar(value=5)
+        ttk.Scale(tone_frame, from_=0, to=10, orient="horizontal", variable=self.formality_var).grid(row=0, column=1, sticky="ew")
+        ttk.Label(tone_frame, text="Emotion").grid(row=1, column=0, sticky="w")
+        self.emotion_var = tk.IntVar(value=5)
+        ttk.Scale(tone_frame, from_=0, to=10, orient="horizontal", variable=self.emotion_var).grid(row=1, column=1, sticky="ew")
+        tone_frame.columnconfigure(1, weight=1)
+
         self.review_output = ScrolledText(frame, height=15)
         self.review_output.pack(fill="both", expand=True, padx=10, pady=5)
 
@@ -81,7 +91,12 @@ class GuardianDeck(tk.Tk):
             return
         count = self.count_var.get()
         try:
-            reviews = generate_reviews(prompt, count=count)
+            reviews = generate_reviews(
+                prompt,
+                count=count,
+                formality=self.formality_var.get(),
+                emotion=self.emotion_var.get(),
+            )
             if self.rewrite_var.get():
                 spun = []
                 for review in reviews:
