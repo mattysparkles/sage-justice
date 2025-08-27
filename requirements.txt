@@ -1,0 +1,6 @@
+selenium
+tk
+openai
+deathbycaptcha
+requests
+webdriver-manager
