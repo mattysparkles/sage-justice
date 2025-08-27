@@ -6,9 +6,13 @@ from datetime import datetime, timedelta
 from core.review_generator import generate_reviews
 
 class ReviewScheduler:
-    def __init__(self, schedule_path="config/schedule.json"):
+    """Lightweight scheduler for posting reviews."""
+
+    def __init__(self, schedule_path: str = "config/schedule.json"):
         self.schedule_path = schedule_path
         self.load_schedule()
+        self.running = False
+        self.thread = None  # type: threading.Thread | None
 
     def load_schedule(self):
         try:
@@ -16,21 +20,35 @@ class ReviewScheduler:
                 self.schedule = json.load(f)
         except FileNotFoundError:
             self.schedule = []
+        for task in self.schedule:
+            task.setdefault("status", "Queued")
 
-    def start(self):
-        threading.Thread(target=self.run_loop, daemon=True).start()
+    def start(self) -> None:
+        if self.thread and self.thread.is_alive():
+            return
+        self.running = True
+        self.thread = threading.Thread(target=self.run_loop, daemon=True)
+        self.thread.start()
 
-    def run_loop(self):
-        while True:
+    def stop(self) -> None:
+        self.running = False
+
+    def run_loop(self) -> None:
+        while self.running:
             now = datetime.now()
             for task in self.schedule:
                 next_run = datetime.fromisoformat(task["next_run"])
                 if next_run <= now:
-                    print(f"[{now.isoformat()}] Posting review to: {task['site']}")
+                    task["status"] = "Posting"
                     try:
                         generate_reviews(task["prompt"], site=task["site"])
                     except TypeError:
                         generate_reviews(task["prompt"])
+                    except Exception:
+                        task["status"] = "Failed"
+                        task["next_run"] = self.get_next_run(task["interval_minutes"])
+                        continue
+                    task["status"] = "Posted"
                     task["next_run"] = self.get_next_run(task["interval_minutes"])
             self.save_schedule()
             time.sleep(60)

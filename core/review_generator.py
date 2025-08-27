@@ -13,18 +13,25 @@ openai.api_key = get_openai_api_key()
 
 
 @retry(max_attempts=3, delay=2, backoff=2)
-def _generate_single_review(prompt):
+def _generate_single_review(prompt, formality: int = 5, emotion: int = 5):
+    """Request a single review from OpenAI with style controls."""
     try:
         return openai.ChatCompletion.create(
             model=get_openai_model(),
             messages=[
                 {
                     "role": "system",
-                    "content": "You are an assistant who writes unique, factual reviews for real experiences.",
+                    "content": (
+                        "You are an assistant who writes unique, factual reviews for real experiences. "
+                        "Match the requested formality and emotion on a 0-10 scale."
+                    ),
                 },
                 {
                     "role": "user",
-                    "content": f"Write a unique negative review based on this prompt: {prompt}",
+                    "content": (
+                        f"Formality:{formality}/10 Emotion:{emotion}/10. "
+                        f"Write a unique negative review based on this prompt: {prompt}"
+                    ),
                 },
             ],
             max_tokens=300,
@@ -34,10 +41,11 @@ def _generate_single_review(prompt):
         raise
 
 
-def generate_reviews(prompt, count=5):
+def generate_reviews(prompt, count: int = 5, *, formality: int = 5, emotion: int = 5):
+    """Generate multiple reviews with style adjustments."""
     responses = []
     for _ in range(count):
-        response = _generate_single_review(prompt)
+        response = _generate_single_review(prompt, formality=formality, emotion=emotion)
         review = response["choices"][0]["message"]["content"]
         responses.append(review.strip())
         time.sleep(1)
