@@ -2,8 +2,8 @@
 import json
 import time
 import threading
-from datetime import datetime
-from core.review_generator import generate_review
+from datetime import datetime, timedelta
+from core.review_generator import generate_reviews
 
 class ReviewScheduler:
     def __init__(self, schedule_path="config/schedule.json"):
@@ -22,11 +22,15 @@ class ReviewScheduler:
 
     def run_loop(self):
         while True:
-            now = datetime.now().isoformat()
+            now = datetime.now()
             for task in self.schedule:
-                if task["next_run"] <= now:
-                    print(f"[{now}] Posting review to: {task['site']}")
-                    generate_review(task["prompt"], site=task["site"])
+                next_run = datetime.fromisoformat(task["next_run"])
+                if next_run <= now:
+                    print(f"[{now.isoformat()}] Posting review to: {task['site']}")
+                    try:
+                        generate_reviews(task["prompt"], site=task["site"])
+                    except TypeError:
+                        generate_reviews(task["prompt"])
                     task["next_run"] = self.get_next_run(task["interval_minutes"])
             self.save_schedule()
             time.sleep(60)
