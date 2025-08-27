@@ -1,0 +1,26 @@
+{
+  "site": "Yelp",
+  "category": "Food & Beverage",
+  "url": "https://www.yelp.com/writeareview",
+  "requires_login": true,
+  "selectors": {
+    "login_button": "#login-btn",
+    "username_field": "#email",
+    "password_field": "#password",
+    "rating_field": ".stars input",
+    "review_textarea": "#review-field",
+    "submit_button": ".submit-btn"
+  },
+  "navigation_steps": [
+    "open url",
+    "click login_button",
+    "fill username_field",
+    "fill password_field",
+    "click submit_button",
+    "fill rating_field",
+    "fill review_textarea",
+    "click submit_button"
+  ],
+  "captcha": "manual",
+  "geolocation_spoofing": false
+}

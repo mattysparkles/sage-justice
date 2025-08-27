@@ -11,6 +11,11 @@ from datetime import datetime
 import tkinter as tk
 from tkinter import ttk, scrolledtext, filedialog, messagebox
 
+try:
+    from site_manager_gui import SiteManagerFrame
+except Exception:
+    from gui.site_manager_gui import SiteManagerFrame
+
 from core.style_generator import generate_styled_reviews, tones
 from core.async_queue import AsyncReviewQueue
 from core.proxy_manager import get_random_proxy
@@ -23,7 +28,6 @@ SITE_CATEGORIES = [
     "Retail",
     "Professional Services",
 ]
-AVAILABLE_SITES = ["google", "dealerrater", "yelp"]
 
 LOG_PATH = "output/post_log.csv"
 
@@ -45,6 +49,7 @@ class MainGUI:
         self._build_schedule_tab()
         self._build_logs_tab()
         self._build_template_tab()
+        self._build_sites_tab()
         self._build_settings_tab()
 
         self.status_var = tk.StringVar(value="Ready")
@@ -96,8 +101,9 @@ class MainGUI:
 
         self.site_list = tk.Listbox(res_nb, selectmode="multiple")
         res_nb.add(self.site_list, text="Sites")
-        for s in AVAILABLE_SITES:
-            self.site_list.insert("end", s)
+        self.available_sites = self._load_sites()
+        for s in self.available_sites:
+            self.site_list.insert("end", s.get("name"))
 
         self.review_list = tk.Listbox(res_nb, selectmode="multiple")
         res_nb.add(self.review_list, text="Reviews")
@@ -156,6 +162,23 @@ class MainGUI:
         except FileNotFoundError:
             return []
 
+    def _load_sites(self) -> list:
+        try:
+            from core.site_registry import get_sites
+            return get_sites()
+        except Exception:
+            return []
+
+    def _refresh_site_list(self) -> None:
+        if not hasattr(self, "site_list"):
+            return
+        self.available_sites = self._load_sites()
+        self.site_list.delete(0, tk.END)
+        for s in self.available_sites:
+            self.site_list.insert(tk.END, s.get("name"))
+
+
+
     def _refresh_projects_view(self) -> None:
         tree = getattr(self, "project_tree", None)
         if not tree:
@@ -201,7 +224,7 @@ class MainGUI:
                 if ident in selected:
                     listbox.selection_set(idx)
 
-        set_selection(self.site_list, len(AVAILABLE_SITES), AVAILABLE_SITES, proj.get("assigned_sites", []))
+        set_selection(self.site_list, len(self.available_sites), [s["name"] for s in self.available_sites], proj.get("assigned_sites", []))
         set_selection(self.review_list, 0, [], proj.get("assigned_reviews", []))
         template_ids = [t["id"] for t in self.available_templates]
         set_selection(
@@ -227,6 +250,7 @@ class MainGUI:
             "category": data["category"],
             "created": datetime.utcnow().isoformat() + "Z",
             "assigned_sites": [],
+            "default_site": data.get("default_site"),
             "assigned_reviews": [],
             "assigned_accounts": [],
             "assigned_proxies": [],
@@ -267,7 +291,7 @@ class MainGUI:
         if not proj:
             messagebox.showwarning("Project", "Select a project first")
             return
-        proj["assigned_sites"] = [AVAILABLE_SITES[i] for i in self.site_list.curselection()]
+        proj["assigned_sites"] = [self.available_sites[i]["name"] for i in self.site_list.curselection()]
         proj["assigned_reviews"] = []
         proj["assigned_templates"] = [
             self.available_templates[i]["id"] for i in self.template_list.curselection()
@@ -291,6 +315,10 @@ class MainGUI:
         ttk.Combobox(top, values=SITE_CATEGORIES, textvariable=cat_var, state="readonly").grid(
             row=2, column=1, sticky="ew"
         )
+        tk.Label(top, text="Default Site").grid(row=3, column=0, sticky="w")
+        site_names = [s.get("name") for s in self.available_sites]
+        site_var = tk.StringVar(value=project.get("default_site") if project else (site_names[0] if site_names else ""))
+        ttk.Combobox(top, values=site_names, textvariable=site_var, state="readonly").grid(row=3, column=1, sticky="ew")
 
         result: dict = {}
 
@@ -302,11 +330,12 @@ class MainGUI:
                 name=name_var.get().strip(),
                 description=desc_var.get().strip(),
                 category=cat_var.get(),
+                default_site=site_var.get(),
             )
             top.destroy()
 
-        ttk.Button(top, text="Save", command=on_ok).grid(row=3, column=0, pady=4)
-        ttk.Button(top, text="Cancel", command=top.destroy).grid(row=3, column=1, pady=4)
+        ttk.Button(top, text="Save", command=on_ok).grid(row=4, column=0, pady=4)
+        ttk.Button(top, text="Cancel", command=top.destroy).grid(row=4, column=1, pady=4)
         top.columnconfigure(1, weight=1)
         top.grab_set()
         top.wait_window()
@@ -451,6 +480,13 @@ class MainGUI:
             return
         with open(path, "w", encoding="utf-8") as f:
             f.write(self.log_text.get("1.0", "end"))
+
+
+    def _build_sites_tab(self) -> None:
+        frame = ttk.Frame(self.notebook)
+        self.notebook.add(frame, text="Sites")
+        mgr = SiteManagerFrame(frame, on_update=self._refresh_site_list)
+        mgr.pack(fill="both", expand=True)
 
     # ------------------------------------------------------------------
     # Template tab

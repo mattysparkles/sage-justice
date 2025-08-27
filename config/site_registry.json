@@ -1,0 +1,9 @@
+[
+  {
+    "name": "Yelp",
+    "filename": "yelp.json",
+    "category": "Food & Beverage",
+    "requires_login": true,
+    "captcha": "manual"
+  }
+]
