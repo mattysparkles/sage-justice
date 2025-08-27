@@ -1,12 +1,27 @@
+import json
 import openai
+import os
 import time
-from core.review_generator import generate_review
-from config.settings import OPENAI_API_KEY
+from core.review_generator import generate_reviews
 
-openai.api_key = OPENAI_API_KEY
 
-def reviewer_agent(prompt, tone='professional'):
-    review = generate_review(prompt, tone)
+def load_api_key():
+    """Fetch the OpenAI API key from the environment or settings.json."""
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        try:
+            with open("config/settings.json", "r", encoding="utf-8") as f:
+                api_key = json.load(f).get("openai_api_key")
+        except FileNotFoundError:
+            api_key = None
+    return api_key
+
+
+openai.api_key = load_api_key()
+
+def reviewer_agent(prompt, tone="professional"):
+    """Generate a single review and log the result."""
+    review = generate_reviews(prompt, count=1)[0]
     log_review(prompt, review, tone)
     return review
 
