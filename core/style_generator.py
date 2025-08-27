@@ -5,6 +5,7 @@ import time
 from core.api_utils import get_openai_api_key
 from core.logger import logger
 from core.retry_handler import retry
+from openai.error import OpenAIError
 
 
 openai.api_key = get_openai_api_key()
@@ -36,14 +37,18 @@ tones = {
 
 @retry(max_attempts=3, delay=2, backoff=2)
 def _generate_single_review(prompt, tone_prompt):
-    return openai.ChatCompletion.create(
-        model="gpt-4",
-        messages=[
-            {"role": "system", "content": tone_prompt},
-            {"role": "user", "content": f"Write a negative review based on: {prompt}"},
-        ],
-        max_tokens=300,
-    )
+    try:
+        return openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": tone_prompt},
+                {"role": "user", "content": f"Write a negative review based on: {prompt}"},
+            ],
+            max_tokens=300,
+        )
+    except OpenAIError as e:
+        logger.error(f"OpenAI request failed: {e}")
+        raise
 
 
 def generate_styled_reviews(prompt, count=5, tone="professional"):
