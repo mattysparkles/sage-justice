@@ -3,6 +3,9 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter.scrolledtext import ScrolledText
 
+from proxy.manager import ProxyManager
+from gui.proxy_manager_gui import ProxyManagerFrame
+
 class GuardianDeck(tk.Tk):
     def __init__(self):
         super().__init__()
@@ -40,9 +43,9 @@ class GuardianDeck(tk.Tk):
         self.template_list.pack(fill='both', expand=True, padx=10, pady=5)
 
     def create_proxy_tab(self, frame):
-        ttk.Label(frame, text="Proxies / Accounts in Use:").pack(anchor='w')
-        self.proxy_display = ScrolledText(frame, height=10)
-        self.proxy_display.pack(fill='both', expand=True, padx=10, pady=5)
+        manager = ProxyManager(path="proxy/proxy_list.txt")
+        proxy_frame = ProxyManagerFrame(frame, manager)
+        proxy_frame.pack(fill='both', expand=True, padx=10, pady=5)
 
     def create_scheduler_tab(self, frame):
         ttk.Label(frame, text="Scheduler Status:").pack(anchor='w')
