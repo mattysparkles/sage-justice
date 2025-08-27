@@ -1,32 +1,17 @@
-# Sage Justice
+# Arc 19: Field Mapper & Recorder
 
-AI-powered review automation for factual, rotating accountability across public platforms.
+This module allows you to visually map and record input fields on review submission pages. It stores selector information that can later be used for automated form filling.
 
-## 🔥 Features
+## Features
 
-- OpenAI-powered review generation (tone-controlled)
-- GUI for spinning, previewing, and scheduling reviews
-- Field mapper for any review site
-- Proxy and account pool rotation
-- Session saving with cookie manager
-- CAPTCHA support (DeathByCaptcha)
-- Review post logging with status
+- Record selectors for form fields (email, username, review text, rating, etc.)
+- Save/load mappings as JSON files
+- Fill fields dynamically during automation runs
 
-## 🧠 Phase 5 Updates
+## Example usage
 
-- GUI dripfeed scheduler (`gui_scheduler.py`)
-- Preview mode to verify reviews before launch
-- Tone selector: professional, emotional, rhetorical, legalese, outraged
-- Delay-based scheduling with jitter
-- Placeholder for IP/geolocation spoofing (Phase 6+)
-
-## 🚀 Quickstart
-
-```bash
-pip install openai selenium tkinter
-python gui/gui_scheduler.py
+```python
+mapper = FieldMapper(driver)
+mapper.record_field("review_text", "CSS_SELECTOR", "textarea.review-box")
+mapper.save_mapping("site_template.json")
 ```
-
-## ⚖️ Built By
-
-Sparkles & Sage — accountability, automated.
