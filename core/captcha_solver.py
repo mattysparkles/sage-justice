@@ -3,24 +3,26 @@
 from typing import Optional
 
 import base64
+import binascii
 import deathbycaptcha
 
 
-def solve_captcha(base64_image: str, username: str, password: str) -> Optional[str]:
+def solve_captcha(image_data: bytes | str, username: str, password: str) -> Optional[str]:
     """Solve a CAPTCHA image using the DeathByCaptcha service.
 
-    Args:
-        base64_image: CAPTCHA image encoded as a base64 string.
-        username: DeathByCaptcha account username.
-        password: DeathByCaptcha account password.
-
-    Returns:
-        The solved CAPTCHA text if successful, otherwise ``None``.
+    ``image_data`` may be raw bytes or a base64-encoded string.
     """
     client = deathbycaptcha.SocketClient(username, password)
     client.is_verbose = True
     try:
-        image_bytes = base64.b64decode(base64_image)
+        if isinstance(image_data, str):
+            try:
+                image_bytes = base64.b64decode(image_data, validate=True)
+            except binascii.Error:
+                image_bytes = image_data.encode("utf-8")
+        else:
+            image_bytes = image_data
+
         result = client.decode(image_bytes)
         if result:
             return result["text"]
