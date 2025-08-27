@@ -1,4 +1,8 @@
 {
   "openai_api_key": "",
+  "captcha_api_key": "",
+  "headless": false,
+  "test_mode": false,
+  "auto_rotate_ip": false,
   "model": "gpt-4"
 }

@@ -16,7 +16,7 @@ class AsyncReviewQueue:
     """Queue that persists tasks and processes them asynchronously."""
 
     def __init__(self) -> None:
-        self.queue: "queue.Queue[tuple[float, str, str]]" = queue.Queue()
+        self.queue: "queue.Queue[tuple[float, str, str, str | None, dict | None]]" = queue.Queue()
         self.stop_event = threading.Event()
         self.thread: threading.Thread | None = None
         self._load()
@@ -26,7 +26,13 @@ class AsyncReviewQueue:
         try:
             data = json.loads(QUEUE_PATH.read_text(encoding="utf-8"))
             for item in data:
-                self.queue.put(tuple(item))
+                # Older queue items may not contain proxy/account
+                if len(item) == 3:
+                    timestamp, review, template = item
+                    proxy = account = None
+                else:
+                    timestamp, review, template, proxy, account = item
+                self.queue.put((timestamp, review, template, proxy, account))
         except FileNotFoundError:
             QUEUE_PATH.write_text("[]", encoding="utf-8")
         except json.JSONDecodeError:
@@ -37,8 +43,8 @@ class AsyncReviewQueue:
         QUEUE_PATH.write_text(json.dumps(items, indent=2), encoding="utf-8")
 
     # ------------------------------------------------------------------
-    def add(self, review: str, template_path: str, post_at_timestamp: float) -> None:
-        self.queue.put((post_at_timestamp, review, template_path))
+    def add(self, review: str, template_path: str, post_at_timestamp: float, proxy: str | None = None, account: dict | None = None) -> None:
+        self.queue.put((post_at_timestamp, review, template_path, proxy, account))
         self._save()
         self.stop_event.set()
 
@@ -58,7 +64,7 @@ class AsyncReviewQueue:
     def run(self) -> None:
         while not self.stop_event.is_set():
             try:
-                timestamp, review, template = self.queue.get(timeout=1)
+                timestamp, review, template, proxy, account = self.queue.get(timeout=1)
             except queue.Empty:
                 continue
 
@@ -66,7 +72,7 @@ class AsyncReviewQueue:
                 delay = timestamp - time.time()
                 if delay <= 0:
                     try:
-                        post_review(template, review)
+                        post_review(template, review, proxy=proxy, account=account)
                     except Exception as e:  # pragma: no cover - logging only
                         print(f"Failed to post review: {e}")
                     break
