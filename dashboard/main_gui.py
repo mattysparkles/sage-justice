@@ -4,7 +4,7 @@ import json
 import tkinter as tk
 from datetime import datetime, timedelta
 from pathlib import Path
-from tkinter import messagebox
+from tkinter import messagebox, simpledialog
 from tkinter import ttk
 from tkinter.scrolledtext import ScrolledText
 
@@ -23,6 +23,8 @@ LOG_PATH = Path("logs/app.log")
 POST_LOG_PATH = Path("logs/post_log.csv")
 ACCOUNTS_PATH = Path("accounts/accounts.json")
 TEMPLATES_DIR = Path("templates")
+PROJECTS_PATH = Path("config/project.json")
+QUEUED_DIR = Path("output/queued_reviews")
 
 
 class GuardianDeck(tk.Tk):
@@ -70,6 +72,13 @@ class GuardianDeck(tk.Tk):
         self.rewrite_var = tk.BooleanVar()
         ttk.Checkbutton(options, text="Rewrite", variable=self.rewrite_var).pack(side="left", padx=5)
         ttk.Button(options, text="Generate", command=self.run_generation).pack(side="left", padx=5)
+        ttk.Label(options, text="Assign to Project:").pack(side="left", padx=(10, 0))
+        self.project_var = tk.StringVar()
+        self.project_box = ttk.Combobox(options, textvariable=self.project_var, state="readonly", width=20)
+        self.project_box.pack(side="left", padx=5)
+        self.project_box.bind("<<ComboboxSelected>>", self.handle_project_selection)
+        self.refresh_projects()
+        ttk.Button(options, text="Assign & Queue", command=self.assign_and_queue).pack(side="left", padx=5)
 
         tone_frame = ttk.Frame(frame)
         tone_frame.pack(fill="x", padx=10, pady=5)
@@ -81,8 +90,34 @@ class GuardianDeck(tk.Tk):
         ttk.Scale(tone_frame, from_=0, to=10, orient="horizontal", variable=self.emotion_var).grid(row=1, column=1, sticky="ew")
         tone_frame.columnconfigure(1, weight=1)
 
-        self.review_output = ScrolledText(frame, height=15)
-        self.review_output.pack(fill="both", expand=True, padx=10, pady=5)
+        select_top = ttk.Frame(frame)
+        select_top.pack(fill="x", padx=10, pady=(5, 0))
+        self.select_all_button_top = ttk.Button(select_top, text="Select All", command=self.toggle_select_all)
+        self.select_all_button_top.pack(side="left")
+        self.selected_label_var = tk.StringVar(value="Selected: 0")
+        ttk.Label(select_top, textvariable=self.selected_label_var).pack(side="right")
+
+        canvas_frame = ttk.Frame(frame)
+        canvas_frame.pack(fill="both", expand=True, padx=10, pady=5)
+        self.review_canvas = tk.Canvas(canvas_frame)
+        self.review_canvas.pack(side="left", fill="both", expand=True)
+        scrollbar = ttk.Scrollbar(canvas_frame, orient="vertical", command=self.review_canvas.yview)
+        scrollbar.pack(side="right", fill="y")
+        self.review_canvas.configure(yscrollcommand=scrollbar.set)
+        self.review_container = ttk.Frame(self.review_canvas)
+        self.review_canvas.create_window((0, 0), window=self.review_container, anchor="nw")
+        self.review_container.bind(
+            "<Configure>",
+            lambda e: self.review_canvas.configure(scrollregion=self.review_canvas.bbox("all")),
+        )
+        self.default_review_bg = self.review_container.cget("background")
+
+        select_bottom = ttk.Frame(frame)
+        select_bottom.pack(fill="x", padx=10, pady=(0, 5))
+        self.select_all_button_bottom = ttk.Button(select_bottom, text="Select All", command=self.toggle_select_all)
+        self.select_all_button_bottom.pack(side="left")
+
+        self.reviews = []
 
     def run_generation(self) -> None:
         prompt = self.prompt_text.get("1.0", "end").strip()
@@ -106,9 +141,105 @@ class GuardianDeck(tk.Tk):
         except Exception as e:
             messagebox.showerror("OpenAI", f"Failed to generate reviews: {e}")
             return
-        self.review_output.delete("1.0", "end")
-        for r in reviews:
-            self.review_output.insert("end", r + "\n\n")
+        reviews = reviews[:count]
+        self.display_reviews(reviews)
+
+    def display_reviews(self, reviews: list[str]) -> None:
+        for child in self.review_container.winfo_children():
+            child.destroy()
+        self.reviews = []
+        for review in reviews:
+            var = tk.BooleanVar()
+            cb = tk.Checkbutton(
+                self.review_container,
+                text=review,
+                variable=var,
+                anchor="w",
+                justify="left",
+                wraplength=750,
+                bg=self.default_review_bg,
+            )
+            cb.configure(command=lambda v=var, w=cb: self.on_review_toggle(v, w))
+            cb.pack(fill="x", anchor="w", pady=2)
+            self.reviews.append({"var": var, "text": review, "widget": cb})
+        self.update_selected_count()
+
+    def on_review_toggle(self, var: tk.BooleanVar, widget: tk.Checkbutton) -> None:
+        widget.configure(bg="#e0f7fa" if var.get() else self.default_review_bg)
+        self.update_selected_count()
+
+    def update_selected_count(self) -> None:
+        selected = sum(1 for r in self.reviews if r["var"].get())
+        self.selected_label_var.set(f"Selected: {selected}")
+        text = "Deselect All" if self.reviews and selected == len(self.reviews) else "Select All"
+        self.select_all_button_top.config(text=text)
+        self.select_all_button_bottom.config(text=text)
+
+    def toggle_select_all(self) -> None:
+        select = any(not r["var"].get() for r in self.reviews)
+        for r in self.reviews:
+            r["var"].set(select)
+            r["widget"].configure(bg="#e0f7fa" if select else self.default_review_bg)
+        self.update_selected_count()
+
+    def load_projects_list(self) -> list[str]:
+        try:
+            data = load_json_config(PROJECTS_PATH)
+            if isinstance(data, list):
+                return data
+            return data.get("projects", [])
+        except FileNotFoundError:
+            return []
+
+    def refresh_projects(self) -> None:
+        projects = self.load_projects_list()
+        values = projects + ["Create New Project..."]
+        self.project_box["values"] = values
+        if projects:
+            self.project_var.set(projects[0])
+        else:
+            self.project_var.set("")
+
+    def handle_project_selection(self, event=None) -> None:
+        if self.project_var.get() == "Create New Project...":
+            name = simpledialog.askstring("New Project", "Project name:")
+            if name:
+                projects = self.load_projects_list()
+                if name not in projects:
+                    projects.append(name)
+                    with open(PROJECTS_PATH, "w", encoding="utf-8") as f:
+                        json.dump(projects, f, indent=2)
+                self.refresh_projects()
+                self.project_var.set(name)
+            else:
+                self.project_var.set("")
+
+    def assign_and_queue(self) -> None:
+        project = self.project_var.get()
+        if not project or project == "Create New Project...":
+            messagebox.showwarning("Project", "Please select a project.")
+            return
+        selected = [r["text"] for r in self.reviews if r["var"].get()]
+        if not selected:
+            messagebox.showinfo("Assign & Queue", "No reviews selected.")
+            return
+        QUEUED_DIR.mkdir(parents=True, exist_ok=True)
+        file_path = QUEUED_DIR / f"{project}.json"
+        try:
+            existing = json.load(open(file_path, "r", encoding="utf-8"))
+        except FileNotFoundError:
+            existing = []
+        for text in selected:
+            existing.append({
+                "text": text,
+                "timestamp": datetime.utcnow().isoformat(),
+                "project": project,
+            })
+        with open(file_path, "w", encoding="utf-8") as f:
+            json.dump(existing, f, indent=2)
+        messagebox.showinfo(
+            "Assign & Queue", f"Queued {len(selected)} review(s) for project '{project}'."
+        )
 
     # --- TEMPLATES ----------------------------------------------------
     def create_templates_tab(self, frame: ttk.Frame) -> None:
