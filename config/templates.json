@@ -1,0 +1,18 @@
+[
+  {
+    "id": "tmpl-001",
+    "name": "Polite 5-Star Auto Template",
+    "category": "Auto Services",
+    "tone": {
+      "formality": 0.8,
+      "positivity": 1.0,
+      "emotion": 0.4
+    },
+    "review_blocks": [
+      "Staff was courteous and knowledgeable.",
+      "They completed the job ahead of schedule.",
+      "Pricing was fair and transparent.",
+      "Would definitely recommend to others."
+    ]
+  }
+]
