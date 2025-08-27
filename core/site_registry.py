@@ -8,6 +8,36 @@ from typing import Any, Dict, List
 SITE_DIR = Path("templates/sites")
 REGISTRY_PATH = Path("config/site_registry.json")
 
+CAPTCHA_TYPES = {"manual", "solver", "none"}
+
+
+def validate_site_data(data: Dict[str, Any]) -> Dict[str, Any]:
+    """Ensure the site configuration contains required fields."""
+    if not isinstance(data.get("site"), str) or not data["site"].strip():
+        raise ValueError("'site' field required")
+    if not isinstance(data.get("category"), str) or not data["category"].strip():
+        raise ValueError("'category' field required")
+    if not isinstance(data.get("url"), str) or not data["url"].strip():
+        raise ValueError("'url' field required")
+    selectors = data.get("selectors")
+    if not isinstance(selectors, dict) or not selectors:
+        raise ValueError("'selectors' must be a non-empty object")
+    steps = data.get("navigation_steps")
+    if not isinstance(steps, list) or not steps:
+        raise ValueError("'navigation_steps' must be a non-empty list")
+    captcha = data.get("captcha", "none")
+    if captcha not in CAPTCHA_TYPES:
+        raise ValueError(f"'captcha' must be one of {sorted(CAPTCHA_TYPES)}")
+    data["site"] = data["site"].strip()
+    data["category"] = data["category"].strip()
+    data["url"] = data["url"].strip()
+    data["selectors"] = selectors
+    data["navigation_steps"] = steps
+    data["requires_login"] = bool(data.get("requires_login", False))
+    data["geolocation_spoofing"] = bool(data.get("geolocation_spoofing", False))
+    data["captcha"] = captcha
+    return data
+
 
 def load_registry() -> List[Dict[str, Any]]:
     if REGISTRY_PATH.exists():
@@ -67,9 +97,8 @@ def get_site(site_name: str) -> Dict[str, Any]:
 
 def save_site(data: Dict[str, Any]) -> str:
     SITE_DIR.mkdir(parents=True, exist_ok=True)
-    name = data.get("site")
-    if not name:
-        raise ValueError("'site' field required")
+    data = validate_site_data(data)
+    name = data["site"]
     filename = f"{name.lower().replace(' ', '_')}.json"
     path = SITE_DIR / filename
     with open(path, "w", encoding="utf-8") as f:

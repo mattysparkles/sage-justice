@@ -49,10 +49,11 @@ class SiteManagerFrame(ttk.Frame):
             return
         data["selectors"] = selectors
         data["navigation_steps"] = steps
-        if not data["site"] or not data["url"]:
-            messagebox.showwarning("Site", "Name and URL required")
+        try:
+            filename = save_site(data)
+        except ValueError as exc:
+            messagebox.showerror("Site", str(exc))
             return
-        filename = save_site(data)
         self.current_name = data["site"]
         self._load_sites()
         self._refresh_list()
