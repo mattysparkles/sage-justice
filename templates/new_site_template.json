@@ -1,0 +1,19 @@
+{
+  "site_name": "SampleSite",
+  "url": "https://www.samplesite.com/review/submit",
+  "fields": {
+    "title": {
+      "selector": "#review-title",
+      "type": "text"
+    },
+    "body": {
+      "selector": "#review-body",
+      "type": "textarea"
+    },
+    "rating": {
+      "selector": ".stars input[value='5']",
+      "type": "click"
+    }
+  },
+  "requires_login": false
+}
