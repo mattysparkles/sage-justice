@@ -29,7 +29,9 @@ class ReviewQueueManager:
     def get_next_task(self):
         with self.lock:
             if self.queue:
-                return self.queue.pop(0)
+                task = self.queue.pop(0)
+                self._save_queue()
+                return task
             return None
 
     def peek(self):
