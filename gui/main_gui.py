@@ -63,12 +63,13 @@ class MainGUI:
 
         self.projects = self._load_projects()
 
-        cols = ("name", "created", "sites", "reviews", "proxies", "accounts")
+        cols = ("name", "created", "sites", "templates", "reviews", "proxies", "accounts")
         self.project_tree = ttk.Treeview(frame, columns=cols, show="headings", height=8)
         headings = {
             "name": "Project Name",
             "created": "Created",
             "sites": "Sites",
+            "templates": "Templates",
             "reviews": "Reviews",
             "proxies": "Proxies",
             "accounts": "Accounts",
@@ -100,6 +101,12 @@ class MainGUI:
 
         self.review_list = tk.Listbox(res_nb, selectmode="multiple")
         res_nb.add(self.review_list, text="Reviews")
+
+        self.available_templates = self._load_templates()
+        self.template_list = tk.Listbox(res_nb, selectmode="multiple")
+        res_nb.add(self.template_list, text="Templates")
+        for tmpl in self.available_templates:
+            self.template_list.insert("end", f"{tmpl['id']}:{tmpl.get('name', '')}")
 
         self.available_accounts = self._load_accounts()
         self.account_list = tk.Listbox(res_nb, selectmode="multiple")
@@ -142,6 +149,13 @@ class MainGUI:
         except FileNotFoundError:
             return []
 
+    def _load_templates(self) -> list:
+        try:
+            with open("config/templates.json", "r", encoding="utf-8") as f:
+                return json.load(f)
+        except FileNotFoundError:
+            return []
+
     def _refresh_projects_view(self) -> None:
         tree = getattr(self, "project_tree", None)
         if not tree:
@@ -157,6 +171,7 @@ class MainGUI:
                     proj.get("name", ""),
                     proj.get("created", ""),
                     len(proj.get("assigned_sites", [])),
+                    len(proj.get("assigned_templates", [])),
                     len(proj.get("assigned_reviews", [])),
                     len(proj.get("assigned_proxies", [])),
                     len(proj.get("assigned_accounts", [])),
@@ -188,6 +203,13 @@ class MainGUI:
 
         set_selection(self.site_list, len(AVAILABLE_SITES), AVAILABLE_SITES, proj.get("assigned_sites", []))
         set_selection(self.review_list, 0, [], proj.get("assigned_reviews", []))
+        template_ids = [t["id"] for t in self.available_templates]
+        set_selection(
+            self.template_list,
+            len(template_ids),
+            template_ids,
+            proj.get("assigned_templates", []),
+        )
         account_ids = [f"acct-{i}" for i in range(len(self.available_accounts))]
         set_selection(self.account_list, len(account_ids), account_ids, proj.get("assigned_accounts", []))
         proxy_ids = [f"proxy-{i}" for i in range(len(self.available_proxies))]
@@ -208,6 +230,7 @@ class MainGUI:
             "assigned_reviews": [],
             "assigned_accounts": [],
             "assigned_proxies": [],
+            "assigned_templates": [],
             "scheduled_tasks": [],
             "template_overrides": {},
             "last_run": None,
@@ -246,6 +269,9 @@ class MainGUI:
             return
         proj["assigned_sites"] = [AVAILABLE_SITES[i] for i in self.site_list.curselection()]
         proj["assigned_reviews"] = []
+        proj["assigned_templates"] = [
+            self.available_templates[i]["id"] for i in self.template_list.curselection()
+        ]
         proj["assigned_accounts"] = [f"acct-{i}" for i in self.account_list.curselection()]
         proj["assigned_proxies"] = [f"proxy-{i}" for i in self.proxy_list.curselection()]
         self._save_projects()

@@ -1,6 +1,7 @@
 """Main Tkinter GUI for Sage Justice dashboard."""
 
 import json
+import random
 import tkinter as tk
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -16,6 +17,7 @@ from core.site_config_loader import SiteConfigLoader
 from scheduler.schedule_engine import ReviewScheduler
 from proxy.manager import ProxyManager
 from gui.proxy_manager_gui import ProxyManagerFrame
+from gui.template_manager_gui import TemplateManagerFrame
 
 SETTINGS_PATH = Path("config/settings.local.json")
 DEFAULT_SETTINGS_PATH = Path("config/settings.json")
@@ -23,6 +25,7 @@ LOG_PATH = Path("logs/app.log")
 POST_LOG_PATH = Path("logs/post_log.csv")
 ACCOUNTS_PATH = Path("accounts/accounts.json")
 TEMPLATES_DIR = Path("templates")
+TEMPLATES_PATH = Path("config/templates.json")
 PROJECTS_PATH = Path("config/project.json")
 QUEUED_DIR = Path("output/queued_reviews")
 
@@ -72,6 +75,11 @@ class GuardianDeck(tk.Tk):
         self.rewrite_var = tk.BooleanVar()
         ttk.Checkbutton(options, text="Rewrite", variable=self.rewrite_var).pack(side="left", padx=5)
         ttk.Button(options, text="Generate", command=self.run_generation).pack(side="left", padx=5)
+        ttk.Label(options, text="Template:").pack(side="left", padx=(10, 0))
+        self.template_var = tk.StringVar()
+        self.template_box = ttk.Combobox(options, textvariable=self.template_var, state="readonly", width=25)
+        self.template_box.pack(side="left", padx=5)
+        self.refresh_template_dropdown()
         ttk.Label(options, text="Assign to Project:").pack(side="left", padx=(10, 0))
         self.project_var = tk.StringVar()
         self.project_box = ttk.Combobox(options, textvariable=self.project_var, state="readonly", width=20)
@@ -120,27 +128,37 @@ class GuardianDeck(tk.Tk):
         self.reviews = []
 
     def run_generation(self) -> None:
-        prompt = self.prompt_text.get("1.0", "end").strip()
-        if not prompt:
-            messagebox.showwarning("Input", "Please provide a prompt.")
-            return
+        tmpl = getattr(self, "template_options", {}).get(self.template_var.get())
         count = self.count_var.get()
-        try:
-            reviews = generate_reviews(
-                prompt,
-                count=count,
-                formality=self.formality_var.get(),
-                emotion=self.emotion_var.get(),
-            )
+        if tmpl:
+            reviews = [self.generate_preview_from_template(tmpl) for _ in range(count)]
             if self.rewrite_var.get():
                 spun = []
                 for review in reviews:
                     variants = generate_variants(review, n=1)
                     spun.append(variants[0] if variants else review)
                 reviews = spun
-        except Exception as e:
-            messagebox.showerror("OpenAI", f"Failed to generate reviews: {e}")
-            return
+        else:
+            prompt = self.prompt_text.get("1.0", "end").strip()
+            if not prompt:
+                messagebox.showwarning("Input", "Please provide a prompt.")
+                return
+            try:
+                reviews = generate_reviews(
+                    prompt,
+                    count=count,
+                    formality=self.formality_var.get(),
+                    emotion=self.emotion_var.get(),
+                )
+                if self.rewrite_var.get():
+                    spun = []
+                    for review in reviews:
+                        variants = generate_variants(review, n=1)
+                        spun.append(variants[0] if variants else review)
+                    reviews = spun
+            except Exception as e:
+                messagebox.showerror("OpenAI", f"Failed to generate reviews: {e}")
+                return
         reviews = reviews[:count]
         self.display_reviews(reviews)
 
@@ -181,6 +199,29 @@ class GuardianDeck(tk.Tk):
             r["var"].set(select)
             r["widget"].configure(bg="#e0f7fa" if select else self.default_review_bg)
         self.update_selected_count()
+
+    def generate_preview_from_template(self, tmpl: dict) -> str:
+        blocks = tmpl.get("review_blocks", [])
+        blocks = blocks[:]
+        random.shuffle(blocks)
+        return " ".join(blocks)
+
+    def load_templates_list(self) -> list[dict]:
+        try:
+            with open(TEMPLATES_PATH, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except FileNotFoundError:
+            return []
+
+    def refresh_template_dropdown(self) -> None:
+        templates = self.load_templates_list()
+        self.template_options = {t["name"]: t for t in templates}
+        values = list(self.template_options.keys())
+        self.template_box["values"] = values
+        if values:
+            self.template_var.set(values[0])
+        else:
+            self.template_var.set("")
 
     def load_projects_list(self) -> list[str]:
         try:
@@ -243,43 +284,8 @@ class GuardianDeck(tk.Tk):
 
     # --- TEMPLATES ----------------------------------------------------
     def create_templates_tab(self, frame: ttk.Frame) -> None:
-        self.template_listbox = tk.Listbox(frame)
-        self.template_listbox.pack(side="left", fill="y", padx=5, pady=5)
-        self.template_editor = ScrolledText(frame)
-        self.template_editor.pack(side="left", fill="both", expand=True, padx=5, pady=5)
-
-        btns = ttk.Frame(frame)
-        btns.pack(fill="x")
-        ttk.Button(btns, text="Load", command=self.load_template).pack(side="left", padx=5)
-        ttk.Button(btns, text="Save", command=self.save_template).pack(side="left")
-        self.refresh_templates()
-
-    def refresh_templates(self) -> None:
-        self.template_listbox.delete(0, tk.END)
-        for file in TEMPLATES_DIR.glob("*.json"):
-            self.template_listbox.insert(tk.END, file.name)
-
-    def load_template(self) -> None:
-        sel = self.template_listbox.curselection()
-        if not sel:
-            return
-        path = TEMPLATES_DIR / self.template_listbox.get(sel[0])
-        data = json.dumps(json.load(open(path, "r", encoding="utf-8")), indent=2)
-        self.template_editor.delete("1.0", "end")
-        self.template_editor.insert("1.0", data)
-        self.current_template_path = path
-
-    def save_template(self) -> None:
-        if not hasattr(self, "current_template_path"):
-            messagebox.showinfo("Template", "No template loaded.")
-            return
-        try:
-            data = json.loads(self.template_editor.get("1.0", "end"))
-            with open(self.current_template_path, "w", encoding="utf-8") as f:
-                json.dump(data, f, indent=2)
-            messagebox.showinfo("Template", "Template saved.")
-        except json.JSONDecodeError:
-            messagebox.showerror("Template", "Invalid JSON")
+        manager = TemplateManagerFrame(frame, on_update=self.refresh_template_dropdown)
+        manager.pack(fill="both", expand=True)
 
     # --- ACCOUNTS -----------------------------------------------------
     def create_accounts_tab(self, frame: ttk.Frame) -> None:
