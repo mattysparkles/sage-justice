@@ -4,19 +4,16 @@ from __future__ import annotations
 
 import threading
 import time
-from typing import Optional
-
-from core.queue_manager import JobQueueManager
+from core import database
 from core.review_poster import post_review
 
 
 class ReviewAgent(threading.Thread):
     """Worker thread that posts reviews pulled from the job queue."""
 
-    def __init__(self, agent_id: int, queue: JobQueueManager) -> None:
+    def __init__(self, agent_id: int) -> None:
         super().__init__(name=f"Agent-{agent_id}")
         self.agent_id = agent_id
-        self.queue = queue
         self.daemon = True
 
     def log(self, message: str) -> None:
@@ -24,7 +21,7 @@ class ReviewAgent(threading.Thread):
 
     def run(self) -> None:  # pragma: no cover - thread logic
         while True:
-            job = self.queue.get_next_job()
+            job = database.fetch_next_job()
             if not job:
                 return
 
@@ -38,13 +35,14 @@ class ReviewAgent(threading.Thread):
                 try:
                     # Actual proxy/account assignment would occur here
                     post_review(site, text)
-                    self.queue.mark_job_as(job_id, "Posted")
+                    database.update_job_status(job_id, "Posted")
+                    database.log_review(text, None, site, job.get("account_id"), job.get("proxy_id"), "Posted")
                     self.log(f"Posted review to {site} – Job ID {job_id}")
                     break
                 except Exception as exc:  # pragma: no cover - network/selenium errors
                     attempt += 1
                     if attempt >= 3:
-                        self.queue.mark_job_as(job_id, "Failed")
+                        database.update_job_status(job_id, "Failed", str(exc))
                         self.log(f"Failed to post review to {site} – Job ID {job_id}: {exc}")
                     else:
                         self.log(f"Error posting to {site} (attempt {attempt}); retrying in {backoff}s")
@@ -55,12 +53,11 @@ class ReviewAgent(threading.Thread):
 class Orchestrator:
     """Spawn worker agents to process queued jobs."""
 
-    def __init__(self, max_agents: int = 5, queue: Optional[JobQueueManager] = None) -> None:
+    def __init__(self, max_agents: int = 5) -> None:
         self.max_agents = max_agents
-        self.queue = queue or JobQueueManager()
 
     def run(self) -> None:  # pragma: no cover - thread orchestration
-        threads = [ReviewAgent(i + 1, self.queue) for i in range(self.max_agents)]
+        threads = [ReviewAgent(i + 1) for i in range(self.max_agents)]
         for t in threads:
             t.start()
         for t in threads:

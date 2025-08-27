@@ -1,20 +1,26 @@
+import importlib
 import os
 import sys
 
 sys.path.append(os.path.abspath("."))
 
-from proxy.manager import ProxyManager
+
+def setup_db(tmp_path):
+    os.environ["REVIEWBOT_DB"] = str(tmp_path / "test.db")
+    import core.database as database
+    importlib.reload(database)
+    import proxy.manager as pm
+    importlib.reload(pm)
+    return database, pm.ProxyManager
 
 
-def test_add_remove_proxy_persists(tmp_path):
-    file_path = tmp_path / "proxies.txt"
-    manager = ProxyManager(path=str(file_path))
-
-    manager.add_proxy("http://1.2.3.4:8080")
-    assert manager.proxies == ["http://1.2.3.4:8080"]
-    assert file_path.read_text().strip() == "http://1.2.3.4:8080"
-
-    manager.add_proxy("http://1.2.3.5:8080")
-    manager.remove_proxy("http://1.2.3.4:8080")
-    assert manager.proxies == ["http://1.2.3.5:8080"]
-    assert file_path.read_text().strip() == "http://1.2.3.5:8080"
+def test_fetch_proxy(tmp_path):
+    database, ProxyManager = setup_db(tmp_path)
+    with database.get_connection() as conn:
+        conn.execute(
+            "INSERT INTO proxies (ip_address, port, region, status) VALUES ('1.2.3.4', '8080', 'us', 'alive')"
+        )
+        conn.commit()
+    manager = ProxyManager()
+    proxy = manager.get_proxy()
+    assert proxy == "1.2.3.4:8080"
