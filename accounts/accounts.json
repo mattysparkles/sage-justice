@@ -1,0 +1,12 @@
+[
+  {
+    "platform": "google",
+    "username": "your.email@gmail.com",
+    "password": "yourpassword"
+  },
+  {
+    "platform": "avvo",
+    "username": "your.avvo@example.com",
+    "password": "yourpassword"
+  }
+]
