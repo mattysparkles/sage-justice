@@ -200,8 +200,7 @@ This phase unlocks powerful commercial potential by reducing friction for everyd
 
 ## 🧠 About
 
-**Sage Justice** is a collaboration between [@mattysparkles](https://github.com/mattysparkles) and ChatGPT ("Sage"), designed to empower individuals with AI tools that tell the truth and do it with style.
-
+**Sage Justice** is a collaboration between [@mattysparkles](https://github.com/mattysparkles) and Sage, designed to empower individuals with AI tools that tell the truth and do it with style
 ---
 
 ## ⚠️ Legal Note
