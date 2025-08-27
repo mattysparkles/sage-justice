@@ -1,0 +1,16 @@
+[
+  {
+    "id": "proj-001",
+    "name": "Google Push – Auto Shops",
+    "description": "Auto service SEO boost",
+    "category": "Auto Services",
+    "created": "2025-08-27T15:43:00Z",
+    "assigned_sites": ["google", "dealerrater"],
+    "assigned_reviews": ["rev-12", "rev-15", "rev-91"],
+    "assigned_accounts": ["acct-4", "acct-9"],
+    "assigned_proxies": ["proxy-03", "proxy-07"],
+    "scheduled_tasks": [],
+    "template_overrides": {},
+    "last_run": null
+  }
+]
