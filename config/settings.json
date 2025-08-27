@@ -1,3 +1,4 @@
 {
-  "openai_api_key": "sk-REPLACE_ME_WITH_YOURS"
+  "openai_api_key": "",
+  "model": "gpt-4"
 }

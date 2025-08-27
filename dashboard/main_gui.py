@@ -1,5 +1,8 @@
+"""Main Tkinter GUI for Sage Justice dashboard."""
+
 import json
 import tkinter as tk
+from datetime import datetime, timedelta
 from pathlib import Path
 from tkinter import messagebox
 from tkinter import ttk
@@ -14,8 +17,10 @@ from scheduler.schedule_engine import ReviewScheduler
 from proxy.manager import ProxyManager
 from gui.proxy_manager_gui import ProxyManagerFrame
 
-SETTINGS_PATH = Path("config/settings.json")
+SETTINGS_PATH = Path("config/settings.local.json")
+DEFAULT_SETTINGS_PATH = Path("config/settings.json")
 LOG_PATH = Path("logs/app.log")
+POST_LOG_PATH = Path("logs/post_log.csv")
 ACCOUNTS_PATH = Path("accounts/accounts.json")
 TEMPLATES_DIR = Path("templates")
 
@@ -25,7 +30,7 @@ class GuardianDeck(tk.Tk):
         super().__init__()
         self.title("Guardian Deck")
         self.geometry("900x700")
-        self.scheduler: ReviewScheduler | None = None
+        self.scheduler = ReviewScheduler()
         self.create_widgets()
 
     # --- UI SETUP -----------------------------------------------------
@@ -75,13 +80,17 @@ class GuardianDeck(tk.Tk):
             messagebox.showwarning("Input", "Please provide a prompt.")
             return
         count = self.count_var.get()
-        reviews = generate_reviews(prompt, count=count)
-        if self.rewrite_var.get():
-            spun = []
-            for review in reviews:
-                variants = generate_variants(review, n=1)
-                spun.append(variants[0] if variants else review)
-            reviews = spun
+        try:
+            reviews = generate_reviews(prompt, count=count)
+            if self.rewrite_var.get():
+                spun = []
+                for review in reviews:
+                    variants = generate_variants(review, n=1)
+                    spun.append(variants[0] if variants else review)
+                reviews = spun
+        except Exception as e:
+            messagebox.showerror("OpenAI", f"Failed to generate reviews: {e}")
+            return
         self.review_output.delete("1.0", "end")
         for r in reviews:
             self.review_output.insert("end", r + "\n\n")
@@ -122,6 +131,7 @@ class GuardianDeck(tk.Tk):
             data = json.loads(self.template_editor.get("1.0", "end"))
             with open(self.current_template_path, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)
+            messagebox.showinfo("Template", "Template saved.")
         except json.JSONDecodeError:
             messagebox.showerror("Template", "Invalid JSON")
 
@@ -141,6 +151,7 @@ class GuardianDeck(tk.Tk):
             data = json.loads(self.accounts_editor.get("1.0", "end"))
             with open(ACCOUNTS_PATH, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)
+            messagebox.showinfo("Accounts", "Accounts saved.")
         except json.JSONDecodeError:
             messagebox.showerror("Accounts", "Invalid JSON")
 
@@ -162,21 +173,76 @@ class GuardianDeck(tk.Tk):
 
     # --- SCHEDULER ----------------------------------------------------
     def create_scheduler_tab(self, frame: ttk.Frame) -> None:
-        self.scheduler_status = ttk.Label(frame, text="Inactive", foreground="red")
-        self.scheduler_status.pack(anchor="w", padx=10, pady=5)
-        ttk.Button(frame, text="Start", command=self.start_scheduler).pack(side="left", padx=5)
-        ttk.Button(frame, text="Stop", command=self.stop_scheduler).pack(side="left", padx=5)
+        self.schedule_listbox = tk.Listbox(frame)
+        self.schedule_listbox.pack(side="left", fill="both", expand=True, padx=5, pady=5)
+
+        controls = ttk.Frame(frame)
+        controls.pack(side="left", fill="y", padx=5, pady=5)
+
+        form = ttk.Frame(controls)
+        form.pack(fill="x")
+        ttk.Label(form, text="Site:").grid(row=0, column=0, sticky="w")
+        self.site_entry = ttk.Entry(form)
+        self.site_entry.grid(row=0, column=1, sticky="ew")
+        ttk.Label(form, text="Prompt:").grid(row=1, column=0, sticky="nw")
+        self.prompt_entry = ScrolledText(form, width=20, height=4)
+        self.prompt_entry.grid(row=1, column=1, sticky="ew")
+        ttk.Label(form, text="Interval (min):").grid(row=2, column=0, sticky="w")
+        self.interval_var = tk.IntVar(value=60)
+        ttk.Spinbox(form, from_=1, to=1440, textvariable=self.interval_var, width=5).grid(row=2, column=1, sticky="w")
+        form.columnconfigure(1, weight=1)
+
+        btns = ttk.Frame(controls)
+        btns.pack(pady=5)
+        ttk.Button(btns, text="Add", command=self.add_schedule).pack(side="left", padx=5)
+        ttk.Button(btns, text="Remove", command=self.remove_schedule).pack(side="left", padx=5)
+        ttk.Button(btns, text="Start", command=self.start_scheduler).pack(side="left", padx=5)
+        ttk.Button(btns, text="Stop", command=self.stop_scheduler).pack(side="left", padx=5)
+
+        self.scheduler_status = ttk.Label(controls, text="Inactive", foreground="red")
+        self.scheduler_status.pack(anchor="w", pady=5)
+        self.refresh_schedule()
+
+    def refresh_schedule(self) -> None:
+        self.schedule_listbox.delete(0, tk.END)
+        for task in self.scheduler.schedule:
+            self.schedule_listbox.insert(
+                tk.END, f"{task['site']} every {task['interval_minutes']} min"
+            )
+
+    def add_schedule(self) -> None:
+        site = self.site_entry.get().strip()
+        prompt = self.prompt_entry.get("1.0", "end").strip()
+        interval = self.interval_var.get()
+        if not site or not prompt:
+            messagebox.showwarning("Schedule", "Site and prompt required.")
+            return
+        task = {
+            "site": site,
+            "prompt": prompt,
+            "interval_minutes": interval,
+            "next_run": (datetime.now() + timedelta(minutes=interval)).isoformat(),
+        }
+        self.scheduler.schedule.append(task)
+        self.scheduler.save_schedule()
+        self.refresh_schedule()
+        messagebox.showinfo("Schedule", "Task added.")
+
+    def remove_schedule(self) -> None:
+        sel = self.schedule_listbox.curselection()
+        if not sel:
+            return
+        self.scheduler.schedule.pop(sel[0])
+        self.scheduler.save_schedule()
+        self.refresh_schedule()
 
     def start_scheduler(self) -> None:
-        if not self.scheduler:
-            self.scheduler = ReviewScheduler()
+        if not getattr(self.scheduler, "thread", None):
             self.scheduler.start()
         self.scheduler_status.config(text="Active", foreground="green")
 
     def stop_scheduler(self) -> None:
-        if self.scheduler and hasattr(self.scheduler, "schedule"):
-            # No direct stop, but we can drop reference; thread will exit when program closes
-            self.scheduler = None
+        # ReviewScheduler has no hard stop; flag is informational only
         self.scheduler_status.config(text="Inactive", foreground="red")
 
     # --- LOGS ---------------------------------------------------------
@@ -188,8 +254,9 @@ class GuardianDeck(tk.Tk):
 
     def load_logs(self) -> None:
         self.log_output.delete("1.0", "end")
-        if LOG_PATH.exists():
-            lines = LOG_PATH.read_text(encoding="utf-8").splitlines()[-100:]
+        path = POST_LOG_PATH if POST_LOG_PATH.exists() else LOG_PATH
+        if path.exists():
+            lines = path.read_text(encoding="utf-8").splitlines()[-100:]
             self.log_output.insert("end", "\n".join(lines))
         else:
             self.log_output.insert("end", "Log file not found.")
@@ -199,18 +266,32 @@ class GuardianDeck(tk.Tk):
         ttk.Label(frame, text="OpenAI API Key:").pack(anchor="w", padx=10, pady=5)
         self.api_key_var = tk.StringVar()
         ttk.Entry(frame, textvariable=self.api_key_var, width=60).pack(padx=10, pady=5)
+        ttk.Label(frame, text="Model:").pack(anchor="w", padx=10, pady=5)
+        self.model_var = tk.StringVar()
+        ttk.Combobox(
+            frame,
+            textvariable=self.model_var,
+            values=["gpt-3.5-turbo", "gpt-4"],
+            state="readonly",
+            width=20,
+        ).pack(padx=10, pady=5)
         ttk.Button(frame, text="Save", command=self.save_settings).pack(pady=5)
         self.load_settings()
 
     def load_settings(self) -> None:
+        path = SETTINGS_PATH if SETTINGS_PATH.exists() else DEFAULT_SETTINGS_PATH
         try:
-            data = load_json_config(SETTINGS_PATH)
-            self.api_key_var.set(data.get("openai_api_key", ""))
+            data = load_json_config(path)
         except FileNotFoundError:
-            self.api_key_var.set("")
+            data = {}
+        self.api_key_var.set(data.get("openai_api_key", ""))
+        self.model_var.set(data.get("model", "gpt-4"))
 
     def save_settings(self) -> None:
-        data = {"openai_api_key": self.api_key_var.get()}
+        data = {
+            "openai_api_key": self.api_key_var.get(),
+            "model": self.model_var.get(),
+        }
         SETTINGS_PATH.write_text(json.dumps(data, indent=2), encoding="utf-8")
         messagebox.showinfo("Settings", "Settings saved.")
 

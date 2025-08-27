@@ -21,7 +21,7 @@ Inspired by the need for ongoing, rotating accountability, the app uses AI to va
 - ⏳ **Dripfeed Scheduler** — publish reviews gradually over 30/60/90 days
 - 🌐 **IP / Proxy / VPN Rotation Support**
 - 👥 **Account Rotation** — swap between accounts per platform
-- 🖥️ **Custom GUI built with PyQt5**
+- 🖥️ **Tkinter dashboard with multi-tab management**
 - 🔒 **Secure API key storage (external)**
 
 ---
@@ -50,8 +50,23 @@ Inspired by the need for ongoing, rotating accountability, the app uses AI to va
 
 4. **Run the app**:
    ```bash
-   python gui/main_gui.py
+   python dashboard/main_gui.py
    ```
+
+### 🗂 Guardian Deck Tabs
+
+The GUI uses a tabbed layout for managing different parts of the system:
+
+| Tab | Purpose |
+|-----|---------|
+| **Review Generator** | Create reviews from a text prompt and optionally rewrite them. |
+| **Templates** | View and edit JSON site templates. |
+| **Accounts** | Maintain site login credentials in `accounts/accounts.json`. |
+| **Proxies** | Add or remove proxies stored in `proxy/proxy_list.txt`. |
+| **Sites** | Display supported sites loaded from template configurations. |
+| **Schedule** | Add drip-feed jobs and start the background scheduler. |
+| **Logs** | Show the last 100 lines from `logs/post_log.csv` or `logs/app.log`. |
+| **Settings** | Save the OpenAI API key and choose the model (e.g., `gpt-4`). |
 
 ---
 

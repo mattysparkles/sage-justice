@@ -1,52 +1,77 @@
+"""Thread-safe asynchronous queue for scheduled reviews."""
+
+import json
+import queue
 import threading
 import time
-import queue
+from pathlib import Path
 
 from core.drip_scheduler import post_review
 
+
+QUEUE_PATH = Path("queue/review_queue.json")
+
+
 class AsyncReviewQueue:
-    def __init__(self):
-        self.queue: "queue.PriorityQueue[tuple[float, str, str]]" = queue.PriorityQueue()
-        self.running = False
+    """Queue that persists tasks and processes them asynchronously."""
+
+    def __init__(self) -> None:
+        self.queue: "queue.Queue[tuple[float, str, str]]" = queue.Queue()
+        self.stop_event = threading.Event()
         self.thread: threading.Thread | None = None
-        self._event = threading.Event()
+        self._load()
 
-    def add(self, review, template_path, post_at_timestamp):
+    # ------------------------------------------------------------------
+    def _load(self) -> None:
+        try:
+            data = json.loads(QUEUE_PATH.read_text(encoding="utf-8"))
+            for item in data:
+                self.queue.put(tuple(item))
+        except FileNotFoundError:
+            QUEUE_PATH.write_text("[]", encoding="utf-8")
+        except json.JSONDecodeError:
+            pass
+
+    def _save(self) -> None:
+        items = list(self.queue.queue)
+        QUEUE_PATH.write_text(json.dumps(items, indent=2), encoding="utf-8")
+
+    # ------------------------------------------------------------------
+    def add(self, review: str, template_path: str, post_at_timestamp: float) -> None:
         self.queue.put((post_at_timestamp, review, template_path))
-        self._event.set()
+        self._save()
+        self.stop_event.set()
 
-    def start(self):
-        if not self.running:
-            self.running = True
-            self.thread = threading.Thread(target=self.run)
-            self.thread.start()
+    def start(self) -> None:
+        if self.thread and self.thread.is_alive():
+            return
+        self.stop_event.clear()
+        self.thread = threading.Thread(target=self.run, daemon=True)
+        self.thread.start()
 
-    def stop(self):
-        if self.running:
-            self.running = False
-            self._event.set()
-            if self.thread:
-                self.thread.join()
+    def stop(self) -> None:
+        self.stop_event.set()
+        if self.thread:
+            self.thread.join()
 
-    def run(self):
-        while self.running:
+    # ------------------------------------------------------------------
+    def run(self) -> None:
+        while not self.stop_event.is_set():
             try:
                 timestamp, review, template = self.queue.get(timeout=1)
             except queue.Empty:
                 continue
 
-            while self.running:
+            while not self.stop_event.is_set():
                 delay = timestamp - time.time()
                 if delay <= 0:
                     try:
-                        print(f"Posting review scheduled for {time.ctime(timestamp)}")
                         post_review(template, review)
-                    except Exception as e:
+                    except Exception as e:  # pragma: no cover - logging only
                         print(f"Failed to post review: {e}")
                     break
-
-                if self._event.wait(timeout=delay):
-                    # A new task may have an earlier timestamp
-                    self._event.clear()
-                    self.queue.put((timestamp, review, template))
+                if self.stop_event.wait(timeout=delay):
                     break
+
+            self._save()
+
