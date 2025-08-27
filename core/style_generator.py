@@ -1,8 +1,10 @@
+"""Generate reviews in varied writing styles."""
+
 import openai
 import random
 import time
 
-from core.api_utils import get_openai_api_key
+from core.api_utils import get_openai_api_key, get_openai_model
 from core.logger import logger
 from core.retry_handler import retry
 from openai.error import OpenAIError
@@ -39,7 +41,7 @@ tones = {
 def _generate_single_review(prompt, tone_prompt):
     try:
         return openai.ChatCompletion.create(
-            model="gpt-4",
+            model=get_openai_model(),
             messages=[
                 {"role": "system", "content": tone_prompt},
                 {"role": "user", "content": f"Write a negative review based on: {prompt}"},
@@ -58,11 +60,8 @@ def generate_styled_reviews(prompt, count=5, tone="professional"):
         tone_prompts = tones.get(current_tone, tones["professional"])
         tone_prompt = random.choice(tone_prompts)
 
-        try:
-            response = _generate_single_review(prompt, tone_prompt)
-            review = response["choices"][0]["message"]["content"]
-            responses.append(review.strip())
-            time.sleep(1)
-        except Exception as e:
-            logger.error(f"Failed to generate styled review: {e}")
+        response = _generate_single_review(prompt, tone_prompt)
+        review = response["choices"][0]["message"]["content"]
+        responses.append(review.strip())
+        time.sleep(1)
     return responses
