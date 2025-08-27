@@ -1,0 +1,8 @@
+{
+  "site": "Google",
+  "url": "https://www.google.com/maps",
+  "fields": {
+    "review_text": "//textarea[@aria-label='Write a review']",
+    "submit_button": "//button[@jsname='LgbsSe']"
+  }
+}
