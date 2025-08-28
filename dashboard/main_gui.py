@@ -14,12 +14,17 @@ import requests
 
 from core import database
 from core.config_loader import load_json_config
-from core.review_spinner import generate_variants
+from core.style_generator import generate_styled_reviews
 from core import project_hub
 from core.site_config_loader import SiteConfigLoader
 from scheduler.schedule_engine import ReviewScheduler
 from gui.template_manager_gui import TemplateManagerFrame
 from core.queue_manager import JobQueueManager
+from core.logger import logger
+from core.serp_scanner import check_review_visibility
+from core.captcha_solver import solve_captcha
+from core.geospoofer import get_random_location
+from core.async_queue import AsyncReviewQueue
 
 SETTINGS_PATH = Path("config/settings.local.json")
 DEFAULT_SETTINGS_PATH = Path("config/settings.json")
@@ -38,6 +43,8 @@ class GuardianDeck(tk.Tk):
         self.geometry("900x700")
         self.scheduler = ReviewScheduler()
         self.job_manager = JobQueueManager()
+        self.async_queue = AsyncReviewQueue()
+        self.async_queue.start()
         self.create_widgets()
 
     # --- UI SETUP -----------------------------------------------------
@@ -60,6 +67,7 @@ class GuardianDeck(tk.Tk):
             "Schedule": self.create_scheduler_tab,
             "Jobs": self.create_jobs_tab,
             "Logs": self.create_logs_tab,
+            "Tools": self.create_tools_tab,
             "Settings": self.create_settings_tab,
         }
 
@@ -199,9 +207,10 @@ class GuardianDeck(tk.Tk):
                 messagebox.showwarning("Input", "Please provide your experience.")
                 return
             try:
-                reviews = generate_variants(prompt, n=count, tone=self.tone_var.get())
+                reviews = generate_styled_reviews(prompt, count=count, tone=self.tone_var.get())
             except Exception as e:
                 messagebox.showerror("OpenAI", f"Failed to generate reviews: {e}")
+                logger.error(f"Review generation failed: {e}")
                 return
         reviews = reviews[:count]
         self.display_reviews(reviews)
@@ -331,6 +340,7 @@ class GuardianDeck(tk.Tk):
         messagebox.showinfo(
             "Assign & Queue", f"Queued {added} review(s) for project '{project}'."
         )
+        logger.info(f"Queued {added} review(s) for project '{project}'")
     # --- PROJECTS ----------------------------------------------------
     def create_projects_tab(self, frame: ttk.Frame) -> None:
         list_frame = ttk.Frame(frame)
@@ -1119,6 +1129,54 @@ class GuardianDeck(tk.Tk):
             self.log_output.insert("end", "\n".join(lines))
         else:
             self.log_output.insert("end", "Log file not found.")
+
+    # --- TOOLS --------------------------------------------------------
+    def create_tools_tab(self, frame: ttk.Frame) -> None:
+        ttk.Button(frame, text="Solve CAPTCHA", command=self.solve_captcha_dialog).pack(
+            anchor="w", padx=10, pady=5
+        )
+        ttk.Button(frame, text="Spoof Location", command=self.spoof_location_demo).pack(
+            anchor="w", padx=10, pady=5
+        )
+        serp_frame = ttk.LabelFrame(frame, text="SERP Scanner")
+        serp_frame.pack(fill="x", padx=10, pady=10)
+        self.serp_query_var = tk.StringVar()
+        ttk.Entry(serp_frame, textvariable=self.serp_query_var, width=40).pack(side="left", padx=5, pady=5)
+        ttk.Button(serp_frame, text="Scan", command=self.run_serp_scan).pack(side="left", padx=5)
+        self.serp_results = ScrolledText(frame, height=10)
+        self.serp_results.pack(fill="both", expand=True, padx=10, pady=5)
+
+    def solve_captcha_dialog(self) -> None:
+        path = filedialog.askopenfilename(title="Select CAPTCHA Image")
+        if not path:
+            return
+        username = simpledialog.askstring("CAPTCHA", "DeathByCaptcha Username:")
+        password = simpledialog.askstring("CAPTCHA", "Password:", show="*")
+        if not username or not password:
+            messagebox.showwarning("CAPTCHA", "Credentials required")
+            return
+        with open(path, "rb") as f:
+            result = solve_captcha(f.read(), username, password)
+        messagebox.showinfo("CAPTCHA", result or "Failed to solve")
+
+    def spoof_location_demo(self) -> None:
+        loc = get_random_location()
+        messagebox.showinfo(
+            "Geospoofer", f"Random location: {loc['city']} ({loc['lat']}, {loc['lon']})"
+        )
+
+    def run_serp_scan(self) -> None:
+        query = self.serp_query_var.get().strip()
+        if not query:
+            messagebox.showwarning("SERP Scanner", "Please enter a query")
+            return
+        try:
+            results = check_review_visibility(query)
+            self.serp_results.delete("1.0", "end")
+            self.serp_results.insert("end", "\n".join(results) or "No results")
+        except Exception as e:
+            logger.error(f"SERP scan failed: {e}")
+            messagebox.showerror("SERP Scanner", str(e))
 
     # --- SETTINGS -----------------------------------------------------
     def create_settings_tab(self, frame: ttk.Frame) -> None:
