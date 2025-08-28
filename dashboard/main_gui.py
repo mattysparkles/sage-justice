@@ -146,11 +146,20 @@ class GuardianDeck(tk.Tk):
         ttk.Scale(tone_frame, from_=0, to=10, orient="horizontal", variable=self.emotion_var).grid(row=1, column=1, sticky="ew")
         tone_frame.columnconfigure(1, weight=1)
 
+        rating_frame = ttk.Frame(frame)
+        rating_frame.pack(fill="x", padx=10, pady=5)
+        ttk.Label(rating_frame, text="Min Stars").grid(row=0, column=0, sticky="w")
+        self.min_star_var = tk.IntVar(value=1)
+        ttk.Spinbox(rating_frame, from_=1, to=5, textvariable=self.min_star_var, width=5).grid(row=0, column=1, padx=5, sticky="w")
+        ttk.Label(rating_frame, text="Max Stars").grid(row=0, column=2, padx=(10, 0), sticky="w")
+        self.max_star_var = tk.IntVar(value=5)
+        ttk.Spinbox(rating_frame, from_=1, to=5, textvariable=self.max_star_var, width=5).grid(row=0, column=3, padx=5, sticky="w")
+
         select_top = ttk.Frame(frame)
         select_top.pack(fill="x", padx=10, pady=(5, 0))
         self.select_all_button_top = ttk.Button(select_top, text="Select All", command=self.toggle_select_all)
         self.select_all_button_top.pack(side="left")
-        self.selected_label_var = tk.StringVar(value="Selected: 0")
+        self.selected_label_var = tk.StringVar(value="Selected: 0/0")
         ttk.Label(select_top, textvariable=self.selected_label_var).pack(side="right")
 
         canvas_frame = ttk.Frame(frame)
@@ -181,6 +190,11 @@ class GuardianDeck(tk.Tk):
     def run_generation(self) -> None:
         tmpl = getattr(self, "template_options", {}).get(self.template_var.get())
         count = self.count_var.get()
+        min_star = self.min_star_var.get()
+        max_star = self.max_star_var.get()
+        if min_star > max_star:
+            messagebox.showwarning("Star Rating", "Min stars cannot exceed max stars.")
+            return
         if tmpl:
             reviews = [self.generate_preview_from_template(tmpl) for _ in range(count)]
             if self.rewrite_var.get():
@@ -217,11 +231,14 @@ class GuardianDeck(tk.Tk):
         for child in self.review_container.winfo_children():
             child.destroy()
         self.reviews = []
+        min_star = self.min_star_var.get()
+        max_star = self.max_star_var.get()
         for review in reviews:
+            rating = random.randint(min_star, max_star)
             var = tk.BooleanVar()
             cb = tk.Checkbutton(
                 self.review_container,
-                text=review,
+                text=f"[{rating}\u2605] {review}",
                 variable=var,
                 anchor="w",
                 justify="left",
@@ -230,7 +247,7 @@ class GuardianDeck(tk.Tk):
             )
             cb.configure(command=lambda v=var, w=cb: self.on_review_toggle(v, w))
             cb.pack(fill="x", anchor="w", pady=2)
-            self.reviews.append({"var": var, "text": review, "widget": cb})
+            self.reviews.append({"var": var, "text": review, "rating": rating, "widget": cb})
         self.update_selected_count()
 
     def on_review_toggle(self, var: tk.BooleanVar, widget: tk.Checkbutton) -> None:
@@ -239,8 +256,9 @@ class GuardianDeck(tk.Tk):
 
     def update_selected_count(self) -> None:
         selected = sum(1 for r in self.reviews if r["var"].get())
-        self.selected_label_var.set(f"Selected: {selected}")
-        text = "Deselect All" if self.reviews and selected == len(self.reviews) else "Select All"
+        total = len(self.reviews)
+        self.selected_label_var.set(f"Selected: {selected}/{total}")
+        text = "Deselect All" if self.reviews and selected == total else "Select All"
         self.select_all_button_top.config(text=text)
         self.select_all_button_bottom.config(text=text)
 
@@ -311,7 +329,7 @@ class GuardianDeck(tk.Tk):
         if not project or project == "Create New Project...":
             messagebox.showwarning("Project", "Please select a project.")
             return
-        selected = [r["text"] for r in self.reviews if r["var"].get()]
+        selected = [r for r in self.reviews if r["var"].get()]
         if not selected:
             messagebox.showinfo("Assign & Queue", "No reviews selected.")
             return
@@ -321,9 +339,10 @@ class GuardianDeck(tk.Tk):
             existing = json.load(open(file_path, "r", encoding="utf-8"))
         except FileNotFoundError:
             existing = []
-        for text in selected:
+        for item in selected:
             existing.append({
-                "text": text,
+                "text": item["text"],
+                "rating": item["rating"],
                 "timestamp": datetime.utcnow().isoformat(),
                 "project": project,
             })
