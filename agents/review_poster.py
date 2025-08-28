@@ -102,8 +102,16 @@ class ReviewPoster:
             elif key == "password_field":
                 element.send_keys(self.account.get("password", ""))
             elif key == "rating_field":
-                rating = str(self.review_data.get("rating", ""))
-                element.send_keys(rating)
+                rating = int(self.review_data.get("rating", 0))
+                rating = max(1, min(5, rating))
+                try:
+                    elements = self.driver.find_elements(By.CSS_SELECTOR, selector)
+                    if elements and 1 <= rating <= len(elements):
+                        elements[rating - 1].click()
+                    else:
+                        element.send_keys(str(rating))
+                except Exception:
+                    element.send_keys(str(rating))
             elif key == "review_textarea":
                 element.send_keys(self.review_data.get("text", ""))
             else:
