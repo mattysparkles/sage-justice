@@ -89,10 +89,30 @@ def init_db() -> None:
             port TEXT,
             region TEXT,
             status TEXT,
-            last_tested TIMESTAMP
+            last_tested TIMESTAMP,
+            username TEXT,
+            password TEXT
         )
         """
     )
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS proxy_projects (
+            proxy_id INTEGER,
+            project TEXT,
+            UNIQUE(proxy_id, project)
+        )
+        """
+    )
+    # Add username/password columns for older databases
+    try:
+        cur.execute("ALTER TABLE proxies ADD COLUMN username TEXT")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        cur.execute("ALTER TABLE proxies ADD COLUMN password TEXT")
+    except sqlite3.OperationalError:
+        pass
     cur.execute(
         """
         CREATE TABLE IF NOT EXISTS sites (
@@ -417,6 +437,54 @@ def get_unassigned_accounts() -> list[Dict[str, Any]]:
     return [dict(r) for r in rows]
 
 
+def get_proxy_projects(proxy_id: int) -> list[str]:
+    """Return list of project names associated with a proxy."""
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT project FROM proxy_projects WHERE proxy_id=?",
+        (proxy_id,),
+    ).fetchall()
+    conn.close()
+    return [r["project"] for r in rows]
+
+
+def assign_proxy_to_project(proxy_id: int, project: str) -> None:
+    """Associate a proxy with a project."""
+    conn = get_connection()
+    conn.execute(
+        "INSERT OR IGNORE INTO proxy_projects (proxy_id, project) VALUES (?, ?)",
+        (proxy_id, project),
+    )
+    conn.commit()
+    conn.close()
+
+
+def remove_proxy_from_project(proxy_id: int, project: str) -> None:
+    """Remove a proxy's association with a project."""
+    conn = get_connection()
+    conn.execute(
+        "DELETE FROM proxy_projects WHERE proxy_id=? AND project=?",
+        (proxy_id, project),
+    )
+    conn.commit()
+    conn.close()
+
+
+def get_proxies_for_project(project: str) -> list[Dict[str, Any]]:
+    """Return all proxies linked to the given project."""
+    conn = get_connection()
+    rows = conn.execute(
+        """
+        SELECT p.* FROM proxies p
+        JOIN proxy_projects pp ON p.id = pp.proxy_id
+        WHERE pp.project=?
+        """,
+        (project,),
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
 # Additional helpers for management GUIs
 
 
@@ -449,16 +517,30 @@ def update_account_health(account_id: int, status: str) -> None:
 
 def get_all_proxies() -> list[Dict[str, Any]]:
     conn = get_connection()
-    rows = conn.execute("SELECT * FROM proxies").fetchall()
+    rows = conn.execute(
+        """
+        SELECT p.*, GROUP_CONCAT(pp.project, ',') AS projects
+        FROM proxies p
+        LEFT JOIN proxy_projects pp ON p.id = pp.proxy_id
+        GROUP BY p.id
+        """
+    ).fetchall()
     conn.close()
     return [dict(r) for r in rows]
 
 
-def add_proxy(ip_address: str, port: str, region: str | None = None, status: str | None = None) -> None:
+def add_proxy(
+    ip_address: str,
+    port: str | None,
+    region: str | None = None,
+    status: str | None = None,
+    username: str | None = None,
+    password: str | None = None,
+) -> None:
     conn = get_connection()
     conn.execute(
-        "INSERT INTO proxies (ip_address, port, region, status) VALUES (?, ?, ?, ?)",
-        (ip_address, port, region, status),
+        "INSERT INTO proxies (ip_address, port, region, status, username, password) VALUES (?, ?, ?, ?, ?, ?)",
+        (ip_address, port, region, status, username, password),
     )
     conn.commit()
     conn.close()
@@ -561,6 +643,10 @@ __all__ = [
     "add_proxy",
     "delete_proxy",
     "update_proxy",
+    "get_proxy_projects",
+    "assign_proxy_to_project",
+    "remove_proxy_from_project",
+    "get_proxies_for_project",
     "log_review",
     "get_all_accounts",
     "get_account_projects",

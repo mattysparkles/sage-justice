@@ -6,7 +6,7 @@ import random
 import tkinter as tk
 from datetime import datetime, timedelta
 from pathlib import Path
-from tkinter import messagebox, simpledialog
+from tkinter import filedialog, messagebox, simpledialog
 from tkinter import ttk
 from tkinter.scrolledtext import ScrolledText
 
@@ -366,7 +366,10 @@ class GuardianDeck(tk.Tk):
         scrollbar = ttk.Scrollbar(list_frame, orient="vertical", command=self.project_listbox.yview)
         scrollbar.pack(side="right", fill="y")
         self.project_listbox.configure(yscrollcommand=scrollbar.set)
-        self.project_listbox.bind("<<ListboxSelect>>", lambda e: self.refresh_project_accounts())
+        self.project_listbox.bind(
+            "<<ListboxSelect>>",
+            lambda e: (self.refresh_project_accounts(), self.refresh_project_proxies()),
+        )
 
         btns = ttk.Frame(frame)
         btns.pack(pady=5)
@@ -384,13 +387,44 @@ class GuardianDeck(tk.Tk):
 
         acc_btns = ttk.Frame(frame)
         acc_btns.pack(pady=5)
-        ttk.Button(acc_btns, text="Assign Account", command=self.assign_account_to_project_from_projects_tab).pack(side="left", padx=5)
-        ttk.Button(acc_btns, text="Unassign Selected", command=self.unassign_account_from_project_from_projects_tab).pack(side="left", padx=5)
+        ttk.Button(
+            acc_btns,
+            text="Assign Account",
+            command=self.assign_account_to_project_from_projects_tab,
+        ).pack(side="left", padx=5)
+        ttk.Button(
+            acc_btns,
+            text="Unassign Selected",
+            command=self.unassign_account_from_project_from_projects_tab,
+        ).pack(side="left", padx=5)
+
+        proxies_frame = ttk.LabelFrame(frame, text="Proxies")
+        proxies_frame.pack(fill="both", expand=True, padx=10, pady=5)
+        self.project_proxies_list = tk.Listbox(proxies_frame)
+        self.project_proxies_list.pack(side="left", fill="both", expand=True)
+        proxy_scroll = ttk.Scrollbar(proxies_frame, orient="vertical", command=self.project_proxies_list.yview)
+        proxy_scroll.pack(side="right", fill="y")
+        self.project_proxies_list.configure(yscrollcommand=proxy_scroll.set)
+
+        proxy_btns = ttk.Frame(frame)
+        proxy_btns.pack(pady=5)
+        ttk.Button(
+            proxy_btns,
+            text="Assign Proxy",
+            command=self.assign_proxy_to_project_from_projects_tab,
+        ).pack(side="left", padx=5)
+        ttk.Button(
+            proxy_btns,
+            text="Unassign Selected",
+            command=self.unassign_proxy_from_project_from_projects_tab,
+        ).pack(side="left", padx=5)
 
         self.project_account_ids: list[int] = []
+        self.project_proxy_ids: list[int] = []
 
         self.refresh_projects_tab()
         self.refresh_project_accounts()
+        self.refresh_project_proxies()
 
     def refresh_projects_tab(self) -> None:
         self.project_listbox.delete(0, "end")
@@ -466,6 +500,18 @@ class GuardianDeck(tk.Tk):
             self.project_accounts_list.insert("end", acc.get("username"))
             self.project_account_ids.append(acc["id"])
 
+    def refresh_project_proxies(self) -> None:
+        self.project_proxies_list.delete(0, "end")
+        self.project_proxy_ids = []
+        sel = self.project_listbox.curselection()
+        if not sel:
+            return
+        project = self.project_listbox.get(sel[0])
+        proxies = database.get_proxies_for_project(project)
+        for proxy in proxies:
+            self.project_proxies_list.insert("end", f"{proxy['ip_address']}:{proxy.get('port','')}")
+            self.project_proxy_ids.append(proxy["id"])
+
     def assign_account_to_project_from_projects_tab(self) -> None:
         sel = self.project_listbox.curselection()
         if not sel:
@@ -502,6 +548,44 @@ class GuardianDeck(tk.Tk):
         database.remove_account_from_project(acc_id, project)
         self.refresh_project_accounts()
         self.refresh_accounts()
+
+    def assign_proxy_to_project_from_projects_tab(self) -> None:
+        sel = self.project_listbox.curselection()
+        if not sel:
+            return
+        project = self.project_listbox.get(sel[0])
+        proxies = database.get_all_proxies()
+        if not proxies:
+            messagebox.showinfo("Proxies", "No proxies available.")
+            return
+        dialog = tk.Toplevel(self)
+        dialog.title("Assign Proxy")
+        ttk.Label(dialog, text="Proxy:").pack(anchor="w", padx=10, pady=10)
+        values = [f"{p['id']}: {p['ip_address']}:{p.get('port','')}" for p in proxies]
+        proxy_var = tk.StringVar(value=values[0])
+        ttk.Combobox(dialog, values=values, textvariable=proxy_var, state="readonly").pack(
+            padx=10, pady=5
+        )
+
+        def save() -> None:
+            proxy_id = int(proxy_var.get().split(":", 1)[0])
+            database.assign_proxy_to_project(proxy_id, project)
+            dialog.destroy()
+            self.refresh_project_proxies()
+            self.refresh_proxies()
+
+        ttk.Button(dialog, text="Assign", command=save).pack(pady=10)
+
+    def unassign_proxy_from_project_from_projects_tab(self) -> None:
+        sel_proj = self.project_listbox.curselection()
+        sel_proxy = self.project_proxies_list.curselection()
+        if not sel_proj or not sel_proxy:
+            return
+        project = self.project_listbox.get(sel_proj[0])
+        proxy_id = self.project_proxy_ids[sel_proxy[0]]
+        database.remove_proxy_from_project(proxy_id, project)
+        self.refresh_project_proxies()
+        self.refresh_proxies()
 
     # --- REVIEW QUEUE ------------------------------------------------
     def create_queue_tab(self, frame: ttk.Frame) -> None:
@@ -740,11 +824,12 @@ class GuardianDeck(tk.Tk):
 
     # --- PROXIES ------------------------------------------------------
     def create_proxy_tab(self, frame: ttk.Frame) -> None:
-        columns = ("ip", "port", "region", "status")
+        columns = ("ip", "port", "region", "status", "projects")
         self.proxy_tree = ttk.Treeview(frame, columns=columns, show="headings")
         for col in columns:
             self.proxy_tree.heading(col, text=col.title())
         self.proxy_tree.column("status", width=100, anchor="center")
+        self.proxy_tree.column("projects", width=150)
         self.proxy_tree.pack(fill="both", expand=True, padx=10, pady=5)
         self.proxy_tree.tag_configure("Working", foreground="green")
         self.proxy_tree.tag_configure("Down", foreground="red")
@@ -757,6 +842,13 @@ class GuardianDeck(tk.Tk):
         ttk.Button(entry, text="Add", command=self.add_proxy).pack(side="left", padx=5)
         ttk.Button(entry, text="Delete Selected", command=self.delete_proxy).pack(side="left", padx=5)
         ttk.Button(entry, text="Test Proxy", command=self.test_selected_proxy).pack(side="left")
+        ttk.Button(entry, text="Assign to Project", command=self.assign_proxy_to_project_dialog).pack(
+            side="left", padx=5
+        )
+        ttk.Button(entry, text="Unassign from Project", command=self.unassign_proxy_from_project_dialog).pack(
+            side="left", padx=5
+        )
+        ttk.Button(entry, text="Import From File", command=self.import_proxies_from_file).pack(side="left", padx=5)
 
         self.refresh_proxies()
 
@@ -765,6 +857,7 @@ class GuardianDeck(tk.Tk):
             self.proxy_tree.delete(item)
         for proxy in database.get_all_proxies():
             tag = proxy.get("status") or "Unknown"
+            projects = proxy.get("projects") or ""
             self.proxy_tree.insert(
                 "",
                 "end",
@@ -774,17 +867,22 @@ class GuardianDeck(tk.Tk):
                     proxy.get("port"),
                     proxy.get("region", ""),
                     proxy.get("status", "Unknown"),
+                    projects,
                 ),
                 tags=(tag,),
             )
 
     def add_proxy(self) -> None:
         entry = self.proxy_entry.get().strip()
-        if not entry or ":" not in entry:
+        if not entry:
             return
-        ip, port = entry.split(":", 1)
-        region = self.lookup_region(ip)
-        database.add_proxy(ip, port, region, "Unknown")
+        parts = entry.split(":")
+        ip = parts[0]
+        port = parts[1] if len(parts) > 1 else None
+        user = parts[2] if len(parts) > 2 else None
+        pwd = parts[3] if len(parts) > 3 else None
+        region = self.lookup_region(ip) if port else None
+        database.add_proxy(ip, port, region, "Unknown", user, pwd)
         self.proxy_entry.delete(0, tk.END)
         self.refresh_proxies()
 
@@ -806,6 +904,77 @@ class GuardianDeck(tk.Tk):
         status = self.ping_proxy(f"{ip}:{port}")
         region = self.lookup_region(ip)
         database.update_proxy(proxy_id, status=status, region=region)
+        self.refresh_proxies()
+
+    def assign_proxy_to_project_dialog(self) -> None:
+        sel = self.proxy_tree.selection()
+        if not sel:
+            return
+        proxy_id = int(sel[0])
+        projects = self.load_projects_list()
+        if not projects:
+            messagebox.showinfo("Projects", "No projects available.")
+            return
+        dialog = tk.Toplevel(self)
+        dialog.title("Assign to Project")
+        ttk.Label(dialog, text="Project:").pack(anchor="w", padx=10, pady=10)
+        proj_var = tk.StringVar(value=projects[0])
+        ttk.Combobox(dialog, values=projects, textvariable=proj_var, state="readonly").pack(
+            padx=10, pady=5
+        )
+
+        def save() -> None:
+            database.assign_proxy_to_project(proxy_id, proj_var.get())
+            dialog.destroy()
+            self.refresh_proxies()
+            self.refresh_project_proxies()
+
+        ttk.Button(dialog, text="Assign", command=save).pack(pady=10)
+
+    def unassign_proxy_from_project_dialog(self) -> None:
+        sel = self.proxy_tree.selection()
+        if not sel:
+            return
+        proxy_id = int(sel[0])
+        projects = database.get_proxy_projects(proxy_id)
+        if not projects:
+            messagebox.showinfo("Unassign", "Proxy not assigned to any project.")
+            return
+        dialog = tk.Toplevel(self)
+        dialog.title("Unassign from Project")
+        ttk.Label(dialog, text="Project:").pack(anchor="w", padx=10, pady=10)
+        proj_var = tk.StringVar(value=projects[0])
+        ttk.Combobox(dialog, values=projects, textvariable=proj_var, state="readonly").pack(
+            padx=10, pady=5
+        )
+
+        def remove() -> None:
+            database.remove_proxy_from_project(proxy_id, proj_var.get())
+            dialog.destroy()
+            self.refresh_proxies()
+            self.refresh_project_proxies()
+
+        ttk.Button(dialog, text="Remove", command=remove).pack(pady=10)
+
+    def import_proxies_from_file(self) -> None:
+        path = filedialog.askopenfilename()
+        if not path:
+            return
+        count = 0
+        with open(path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                parts = line.split(":")
+                ip = parts[0]
+                port = parts[1] if len(parts) > 1 else None
+                user = parts[2] if len(parts) > 2 else None
+                pwd = parts[3] if len(parts) > 3 else None
+                region = self.lookup_region(ip) if port else None
+                database.add_proxy(ip, port, region, "Unknown", user, pwd)
+                count += 1
+        messagebox.showinfo("Import", f"Imported {count} proxies.")
         self.refresh_proxies()
 
     def lookup_region(self, ip: str) -> str | None:
