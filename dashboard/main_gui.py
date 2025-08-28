@@ -366,6 +366,7 @@ class GuardianDeck(tk.Tk):
         scrollbar = ttk.Scrollbar(list_frame, orient="vertical", command=self.project_listbox.yview)
         scrollbar.pack(side="right", fill="y")
         self.project_listbox.configure(yscrollcommand=scrollbar.set)
+        self.project_listbox.bind("<<ListboxSelect>>", lambda e: self.refresh_project_accounts())
 
         btns = ttk.Frame(frame)
         btns.pack(pady=5)
@@ -373,7 +374,23 @@ class GuardianDeck(tk.Tk):
         ttk.Button(btns, text="Rename", command=self.rename_project).pack(side="left", padx=5)
         ttk.Button(btns, text="Delete", command=self.delete_project).pack(side="left", padx=5)
 
+        accounts_frame = ttk.LabelFrame(frame, text="Accounts")
+        accounts_frame.pack(fill="both", expand=True, padx=10, pady=5)
+        self.project_accounts_list = tk.Listbox(accounts_frame)
+        self.project_accounts_list.pack(side="left", fill="both", expand=True)
+        acc_scroll = ttk.Scrollbar(accounts_frame, orient="vertical", command=self.project_accounts_list.yview)
+        acc_scroll.pack(side="right", fill="y")
+        self.project_accounts_list.configure(yscrollcommand=acc_scroll.set)
+
+        acc_btns = ttk.Frame(frame)
+        acc_btns.pack(pady=5)
+        ttk.Button(acc_btns, text="Assign Account", command=self.assign_account_to_project_from_projects_tab).pack(side="left", padx=5)
+        ttk.Button(acc_btns, text="Unassign Selected", command=self.unassign_account_from_project_from_projects_tab).pack(side="left", padx=5)
+
+        self.project_account_ids: list[int] = []
+
         self.refresh_projects_tab()
+        self.refresh_project_accounts()
 
     def refresh_projects_tab(self) -> None:
         self.project_listbox.delete(0, "end")
@@ -436,6 +453,55 @@ class GuardianDeck(tk.Tk):
             self.refresh_queue_projects()
         else:
             projects.insert(index, name)
+
+    def refresh_project_accounts(self) -> None:
+        self.project_accounts_list.delete(0, "end")
+        self.project_account_ids = []
+        sel = self.project_listbox.curselection()
+        if not sel:
+            return
+        project = self.project_listbox.get(sel[0])
+        accounts = database.get_accounts_for_project(project)
+        for acc in accounts:
+            self.project_accounts_list.insert("end", acc.get("username"))
+            self.project_account_ids.append(acc["id"])
+
+    def assign_account_to_project_from_projects_tab(self) -> None:
+        sel = self.project_listbox.curselection()
+        if not sel:
+            return
+        project = self.project_listbox.get(sel[0])
+        accounts = database.get_all_accounts()
+        if not accounts:
+            messagebox.showinfo("Accounts", "No accounts available.")
+            return
+        dialog = tk.Toplevel(self)
+        dialog.title("Assign Account")
+        ttk.Label(dialog, text="Account:").pack(anchor="w", padx=10, pady=10)
+        values = [f"{a['id']}: {a['username']}" for a in accounts]
+        acc_var = tk.StringVar(value=values[0])
+        acc_box = ttk.Combobox(dialog, values=values, textvariable=acc_var, state="readonly")
+        acc_box.pack(padx=10, pady=5)
+
+        def save() -> None:
+            acc_id = int(acc_var.get().split(":", 1)[0])
+            database.assign_account_to_project(acc_id, project)
+            dialog.destroy()
+            self.refresh_project_accounts()
+            self.refresh_accounts()
+
+        ttk.Button(dialog, text="Assign", command=save).pack(pady=10)
+
+    def unassign_account_from_project_from_projects_tab(self) -> None:
+        sel_proj = self.project_listbox.curselection()
+        sel_acc = self.project_accounts_list.curselection()
+        if not sel_proj or not sel_acc:
+            return
+        project = self.project_listbox.get(sel_proj[0])
+        acc_id = self.project_account_ids[sel_acc[0]]
+        database.remove_account_from_project(acc_id, project)
+        self.refresh_project_accounts()
+        self.refresh_accounts()
 
     # --- REVIEW QUEUE ------------------------------------------------
     def create_queue_tab(self, frame: ttk.Frame) -> None:
@@ -555,11 +621,12 @@ class GuardianDeck(tk.Tk):
 
     # --- ACCOUNTS -----------------------------------------------------
     def create_accounts_tab(self, frame: ttk.Frame) -> None:
-        columns = ("username", "category", "status", "last_used")
+        columns = ("username", "category", "projects", "status", "last_used")
         self.accounts_tree = ttk.Treeview(frame, columns=columns, show="headings")
         for col in columns:
             self.accounts_tree.heading(col, text=col.replace("_", " ").title())
         self.accounts_tree.column("status", width=100, anchor="center")
+        self.accounts_tree.column("projects", width=150)
         self.accounts_tree.pack(fill="both", expand=True, padx=10, pady=5)
         self.accounts_tree.tag_configure("healthy", foreground="green")
         self.accounts_tree.tag_configure("warning", foreground="orange")
@@ -570,6 +637,8 @@ class GuardianDeck(tk.Tk):
         ttk.Button(btns, text="Add Account", command=self.add_account_dialog).pack(side="left", padx=5)
         ttk.Button(btns, text="Delete Selected", command=self.delete_selected_account).pack(side="left", padx=5)
         ttk.Button(btns, text="Mark as Failed", command=self.mark_account_failed).pack(side="left", padx=5)
+        ttk.Button(btns, text="Assign to Project", command=self.assign_account_to_project_dialog).pack(side="left", padx=5)
+        ttk.Button(btns, text="Unassign from Project", command=self.unassign_account_from_project_dialog).pack(side="left", padx=5)
 
         self.refresh_accounts()
 
@@ -579,6 +648,7 @@ class GuardianDeck(tk.Tk):
         for acc in database.get_all_accounts():
             status = acc.get("health_status") or "warning"
             tag = status if status in ("healthy", "failed") else "warning"
+            projects = ", ".join(database.get_account_projects(acc["id"]))
             self.accounts_tree.insert(
                 "",
                 "end",
@@ -586,6 +656,7 @@ class GuardianDeck(tk.Tk):
                 values=(
                     acc.get("username"),
                     acc.get("category"),
+                    projects,
                     status,
                     acc.get("last_used", ""),
                 ),
@@ -618,6 +689,54 @@ class GuardianDeck(tk.Tk):
         account_id = int(sel[0])
         database.update_account_health(account_id, "failed")
         self.refresh_accounts()
+
+    def assign_account_to_project_dialog(self) -> None:
+        sel = self.accounts_tree.selection()
+        if not sel:
+            return
+        account_id = int(sel[0])
+        projects = self.load_projects_list()
+        if not projects:
+            messagebox.showinfo("Projects", "No projects available.")
+            return
+        dialog = tk.Toplevel(self)
+        dialog.title("Assign to Project")
+        ttk.Label(dialog, text="Project:").pack(anchor="w", padx=10, pady=10)
+        proj_var = tk.StringVar(value=projects[0])
+        proj_box = ttk.Combobox(dialog, values=projects, textvariable=proj_var, state="readonly")
+        proj_box.pack(padx=10, pady=5)
+
+        def save() -> None:
+            database.assign_account_to_project(account_id, proj_var.get())
+            dialog.destroy()
+            self.refresh_accounts()
+            self.refresh_project_accounts()
+
+        ttk.Button(dialog, text="Assign", command=save).pack(pady=10)
+
+    def unassign_account_from_project_dialog(self) -> None:
+        sel = self.accounts_tree.selection()
+        if not sel:
+            return
+        account_id = int(sel[0])
+        projects = database.get_account_projects(account_id)
+        if not projects:
+            messagebox.showinfo("Unassign", "Account not assigned to any project.")
+            return
+        dialog = tk.Toplevel(self)
+        dialog.title("Unassign from Project")
+        ttk.Label(dialog, text="Project:").pack(anchor="w", padx=10, pady=10)
+        proj_var = tk.StringVar(value=projects[0])
+        proj_box = ttk.Combobox(dialog, values=projects, textvariable=proj_var, state="readonly")
+        proj_box.pack(padx=10, pady=5)
+
+        def remove() -> None:
+            database.remove_account_from_project(account_id, proj_var.get())
+            dialog.destroy()
+            self.refresh_accounts()
+            self.refresh_project_accounts()
+
+        ttk.Button(dialog, text="Remove", command=remove).pack(pady=10)
 
     # --- PROXIES ------------------------------------------------------
     def create_proxy_tab(self, frame: ttk.Frame) -> None:

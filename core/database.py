@@ -74,6 +74,15 @@ def init_db() -> None:
     )
     cur.execute(
         """
+        CREATE TABLE IF NOT EXISTS account_projects (
+            account_id INTEGER,
+            project TEXT,
+            UNIQUE(account_id, project)
+        )
+        """
+    )
+    cur.execute(
+        """
         CREATE TABLE IF NOT EXISTS proxies (
             id INTEGER PRIMARY KEY,
             ip_address TEXT,
@@ -347,6 +356,67 @@ def get_all_accounts() -> list[Dict[str, Any]]:
     return [dict(r) for r in rows]
 
 
+def get_account_projects(account_id: int) -> list[str]:
+    """Return list of project names associated with an account."""
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT project FROM account_projects WHERE account_id=?",
+        (account_id,),
+    ).fetchall()
+    conn.close()
+    return [r["project"] for r in rows]
+
+
+def assign_account_to_project(account_id: int, project: str) -> None:
+    """Associate an account with a project."""
+    conn = get_connection()
+    conn.execute(
+        "INSERT OR IGNORE INTO account_projects (account_id, project) VALUES (?, ?)",
+        (account_id, project),
+    )
+    conn.commit()
+    conn.close()
+
+
+def remove_account_from_project(account_id: int, project: str) -> None:
+    """Remove an account's association with a project."""
+    conn = get_connection()
+    conn.execute(
+        "DELETE FROM account_projects WHERE account_id=? AND project=?",
+        (account_id, project),
+    )
+    conn.commit()
+    conn.close()
+
+
+def get_accounts_for_project(project: str) -> list[Dict[str, Any]]:
+    """Return all accounts linked to the given project."""
+    conn = get_connection()
+    rows = conn.execute(
+        """
+        SELECT a.* FROM accounts a
+        JOIN account_projects ap ON a.id = ap.account_id
+        WHERE ap.project=?
+        """,
+        (project,),
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def get_unassigned_accounts() -> list[Dict[str, Any]]:
+    """Return accounts not linked to any project."""
+    conn = get_connection()
+    rows = conn.execute(
+        """
+        SELECT * FROM accounts
+        WHERE id NOT IN (SELECT account_id FROM account_projects)
+        """
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
 # Additional helpers for management GUIs
 
 
@@ -493,6 +563,11 @@ __all__ = [
     "update_proxy",
     "log_review",
     "get_all_accounts",
+    "get_account_projects",
+    "assign_account_to_project",
+    "remove_account_from_project",
+    "get_accounts_for_project",
+    "get_unassigned_accounts",
     "job_counts",
     "count_reviews_today",
     "accounts_status_counts",
