@@ -11,6 +11,7 @@ from core.site_registry import (
     import_site,
     save_site,
 )
+from tools.guided_mapper import run_guided_mapper
 
 CAPTCHA_OPTIONS = ["manual", "solver", "none"]
 
@@ -87,6 +88,7 @@ class SiteManagerFrame(ttk.Frame):
         ttk.Button(btns, text="Delete", command=self._delete_site).pack(side="left", padx=4)
         ttk.Button(btns, text="Import", command=self._import_site).pack(side="left")
         ttk.Button(btns, text="Export", command=self._export_site).pack(side="left", padx=4)
+        ttk.Button(btns, text="Map Fields", command=self._guided_mapper).pack(side="left")
 
         right = ttk.Frame(self)
         right.pack(side="left", fill="both", expand=True, padx=5)
@@ -204,6 +206,18 @@ class SiteManagerFrame(ttk.Frame):
         if not path:
             return
         export_site(Path(sel[0]).stem, Path(path))
+
+    def _guided_mapper(self) -> None:
+        url = self.url_var.get().strip()
+        if not url:
+            messagebox.showerror("Guided Mapper", "Enter a site URL first")
+            return
+        mapping = run_guided_mapper(self.winfo_toplevel(), url)
+        if not mapping:
+            return
+        self.selectors_text.delete("1.0", "end")
+        self.selectors_text.insert("end", json.dumps(mapping, indent=2))
+        messagebox.showinfo("Guided Mapper", f"Captured {len(mapping)} fields")
 
     def _load_from_file(self) -> None:
         path = filedialog.askopenfilename(filetypes=[("JSON", "*.json")])
