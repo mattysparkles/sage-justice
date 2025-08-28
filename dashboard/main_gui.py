@@ -160,7 +160,10 @@ class GuardianDeck(tk.Tk):
         scrollbar = ttk.Scrollbar(canvas_frame, orient="vertical", command=self.review_canvas.yview)
         scrollbar.pack(side="right", fill="y")
         self.review_canvas.configure(yscrollcommand=scrollbar.set)
-        self.review_container = ttk.Frame(self.review_canvas)
+        # Use a regular Tk frame rather than ttk so that background color can
+        # be queried and configured. ttk.Frame does not support the "background"
+        # option which leads to a TclError when calling cget("background").
+        self.review_container = tk.Frame(self.review_canvas)
         self.review_canvas.create_window((0, 0), window=self.review_container, anchor="nw")
         self.review_container.bind(
             "<Configure>",
