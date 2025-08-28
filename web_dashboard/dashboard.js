@@ -57,3 +57,10 @@ document.getElementById('submit-form').addEventListener('submit', async (e) => {
 fetchStatus();
 fetchLogs();
 setInterval(fetchLogs, 5000);
+
+const getStartedBtn = document.getElementById('get-started-btn');
+if (getStartedBtn) {
+  getStartedBtn.addEventListener('click', () => {
+    document.getElementById('submit-section').scrollIntoView({ behavior: 'smooth' });
+  });
+}
