@@ -447,6 +447,22 @@ def accounts_status_counts() -> Dict[str, int]:
     return {row["status"]: row["c"] for row in rows}
 
 
+def proxies_status_counts() -> Dict[str, int]:
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT COALESCE(status, 'unknown') AS status, COUNT(*) AS c FROM proxies GROUP BY status"
+    ).fetchall()
+    conn.close()
+    return {row["status"]: row["c"] for row in rows}
+
+
+def pending_jobs_count() -> int:
+    conn = get_connection()
+    row = conn.execute("SELECT COUNT(*) FROM jobs WHERE status = 'Pending'").fetchone()
+    conn.close()
+    return row[0] if row else 0
+
+
 def proxies_region_counts() -> Dict[str, int]:
     conn = get_connection()
     rows = conn.execute(
@@ -480,5 +496,7 @@ __all__ = [
     "job_counts",
     "count_reviews_today",
     "accounts_status_counts",
+    "proxies_status_counts",
+    "pending_jobs_count",
     "proxies_region_counts",
 ]

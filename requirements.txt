@@ -7,3 +7,5 @@ webdriver-manager
 
 undetected-chromedriver
 fpdf
+fastapi
+uvicorn
