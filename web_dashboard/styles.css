@@ -1,9 +1,96 @@
-body { font-family: Arial, sans-serif; margin: 20px; }
-h1 { text-align: center; }
-section { margin-bottom: 30px; }
-#status-table { border-collapse: collapse; width: 100%; }
-#status-table th, #status-table td { border: 1px solid #ccc; padding: 8px; }
-.green { background-color: #c8e6c9; }
-.yellow { background-color: #fff9c4; }
-.red { background-color: #ffcdd2; }
-#logs { max-height: 300px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px; }
+:root {
+  --primary-color: #2c3e50;
+  --accent-color: #3498db;
+  --bg-color: #f4f6f9;
+  --card-bg: #ffffff;
+  --border-color: #e0e0e0;
+  --text-color: #333333;
+  --success-bg: #d4edda;
+  --warning-bg: #fff3cd;
+  --error-bg: #f8d7da;
+}
+
+body {
+  font-family: 'Inter', Arial, sans-serif;
+  background: var(--bg-color);
+  color: var(--text-color);
+  margin: 0;
+}
+
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+h1 {
+  text-align: center;
+  color: var(--primary-color);
+  margin-bottom: 30px;
+}
+
+section {
+  background: var(--card-bg);
+  margin-bottom: 30px;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#status-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+#status-table th {
+  text-align: left;
+  background: var(--primary-color);
+  color: #fff;
+  padding: 10px;
+}
+
+#status-table td {
+  border: 1px solid var(--border-color);
+  padding: 8px;
+}
+
+#status-table tbody tr:nth-child(even) {
+  background: var(--bg-color);
+}
+
+.green { background-color: var(--success-bg); }
+.yellow { background-color: var(--warning-bg); }
+.red { background-color: var(--error-bg); }
+
+#submit-form input,
+#submit-form textarea {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-family: inherit;
+}
+
+#submit-form button {
+  background: var(--accent-color);
+  color: #fff;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+#submit-form button:hover {
+  background: #2b80b9;
+}
+
+#logs {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  padding: 10px;
+  background: var(--bg-color);
+  border-radius: 4px;
+}
