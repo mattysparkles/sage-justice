@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from threading import Lock
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from . import database
 
@@ -14,6 +14,8 @@ class JobQueueManager:
 
     def __init__(self) -> None:
         self.lock = Lock()
+        # Cached list of jobs for interfaces that expect an in-memory queue
+        self.queue: List[Dict[str, Any]] = []
 
     def add_job(
         self,
@@ -39,6 +41,38 @@ class JobQueueManager:
     def retry_failed_jobs(self) -> None:
         with self.lock:
             database.retry_failed_jobs()
+
+    # ------------------------------------------------------------------
+    # Compatibility helpers
+    def load_queue(self) -> None:
+        """Populate ``self.queue`` with all jobs from the database.
+
+        The previous JSON-backed implementation exposed a ``load_queue``
+        method that refreshed an in-memory list of jobs.  The GUI still
+        relies on this behaviour.  This method reintroduces that API by
+        reading all jobs from the SQLite database and normalising the
+        ``scheduled_time`` field to a POSIX timestamp.
+        """
+
+        with self.lock:
+            conn = database.get_connection()
+            rows = conn.execute("SELECT * FROM jobs ORDER BY created_at").fetchall()
+            conn.close()
+
+            queue: List[Dict[str, Any]] = []
+            for row in rows:
+                job = dict(row)
+                sched = job.get("scheduled_time")
+                if isinstance(sched, str):
+                    try:
+                        job["scheduled_time"] = datetime.fromisoformat(sched).timestamp()
+                    except ValueError:
+                        job["scheduled_time"] = 0.0
+                elif sched is None:
+                    job["scheduled_time"] = 0.0
+                queue.append(job)
+
+            self.queue = queue
 
 
 # Backwards compatibility -------------------------------------------------
