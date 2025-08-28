@@ -347,6 +347,115 @@ def get_all_accounts() -> list[Dict[str, Any]]:
     return [dict(r) for r in rows]
 
 
+# Additional helpers for management GUIs
+
+
+def add_account(username: str, password: str, category: str, health_status: str = "healthy") -> None:
+    """Insert a new account into the database."""
+    conn = get_connection()
+    conn.execute(
+        "INSERT INTO accounts (username, password, category, health_status) VALUES (?, ?, ?, ?)",
+        (username, password, category, health_status),
+    )
+    conn.commit()
+    conn.close()
+
+
+def delete_account(account_id: int) -> None:
+    """Remove an account from the database."""
+    conn = get_connection()
+    conn.execute("DELETE FROM accounts WHERE id=?", (account_id,))
+    conn.commit()
+    conn.close()
+
+
+def update_account_health(account_id: int, status: str) -> None:
+    """Update an account's health status."""
+    conn = get_connection()
+    conn.execute("UPDATE accounts SET health_status=? WHERE id=?", (status, account_id))
+    conn.commit()
+    conn.close()
+
+
+def get_all_proxies() -> list[Dict[str, Any]]:
+    conn = get_connection()
+    rows = conn.execute("SELECT * FROM proxies").fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def add_proxy(ip_address: str, port: str, region: str | None = None, status: str | None = None) -> None:
+    conn = get_connection()
+    conn.execute(
+        "INSERT INTO proxies (ip_address, port, region, status) VALUES (?, ?, ?, ?)",
+        (ip_address, port, region, status),
+    )
+    conn.commit()
+    conn.close()
+
+
+def delete_proxy(proxy_id: int) -> None:
+    conn = get_connection()
+    conn.execute("DELETE FROM proxies WHERE id=?", (proxy_id,))
+    conn.commit()
+    conn.close()
+
+
+def update_proxy(proxy_id: int, status: str | None = None, region: str | None = None) -> None:
+    conn = get_connection()
+    cur = conn.cursor()
+    fields: list[str] = []
+    values: list[Any] = []
+    if status is not None:
+        fields.append("status=?")
+        values.append(status)
+    if region is not None:
+        fields.append("region=?")
+        values.append(region)
+    if fields:
+        fields.append("last_tested=CURRENT_TIMESTAMP")
+        sql = f"UPDATE proxies SET {', '.join(fields)} WHERE id=?"
+        values.append(proxy_id)
+        cur.execute(sql, tuple(values))
+        conn.commit()
+    conn.close()
+
+
+def job_counts() -> Dict[str, int]:
+    """Return counts of jobs grouped by status."""
+    conn = get_connection()
+    rows = conn.execute("SELECT status, COUNT(*) AS c FROM jobs GROUP BY status").fetchall()
+    conn.close()
+    return {row["status"]: row["c"] for row in rows}
+
+
+def count_reviews_today() -> int:
+    conn = get_connection()
+    row = conn.execute(
+        "SELECT COUNT(*) FROM reviews WHERE DATE(created_at) = DATE('now')"
+    ).fetchone()
+    conn.close()
+    return row[0] if row else 0
+
+
+def accounts_status_counts() -> Dict[str, int]:
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT COALESCE(health_status, 'unknown') AS status, COUNT(*) AS c FROM accounts GROUP BY status"
+    ).fetchall()
+    conn.close()
+    return {row["status"]: row["c"] for row in rows}
+
+
+def proxies_region_counts() -> Dict[str, int]:
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT COALESCE(region, 'unknown') AS region, COUNT(*) AS c FROM proxies GROUP BY region"
+    ).fetchall()
+    conn.close()
+    return {row["region"]: row["c"] for row in rows}
+
+
 # Initialise database when module is imported
 init_db()
 
@@ -354,11 +463,22 @@ __all__ = [
     "get_connection",
     "get_available_account",
     "mark_account_failed",
+    "add_account",
+    "delete_account",
+    "update_account_health",
     "insert_job",
     "fetch_next_job",
     "update_job_status",
     "retry_failed_jobs",
     "fetch_proxy",
+    "get_all_proxies",
+    "add_proxy",
+    "delete_proxy",
+    "update_proxy",
     "log_review",
     "get_all_accounts",
+    "job_counts",
+    "count_reviews_today",
+    "accounts_status_counts",
+    "proxies_region_counts",
 ]
