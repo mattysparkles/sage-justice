@@ -6,3 +6,4 @@ requests
 webdriver-manager
 
 undetected-chromedriver
+fpdf
