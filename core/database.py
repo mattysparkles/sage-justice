@@ -611,15 +611,17 @@ def add_account(
     category: str,
     health_status: str = "healthy",
     metadata: Optional[Dict[str, Any]] = None,
-) -> None:
-    """Insert a new account into the database."""
+) -> int:
+    """Insert a new account into the database and return its ID."""
     conn = get_connection()
-    conn.execute(
+    cursor = conn.execute(
         "INSERT INTO accounts (username, password, category, health_status, metadata) VALUES (?, ?, ?, ?, ?)",
         (username, password, category, health_status, json.dumps(metadata) if metadata else None),
     )
     conn.commit()
+    account_id = cursor.lastrowid
     conn.close()
+    return account_id
 
 
 def delete_account(account_id: int) -> None:
