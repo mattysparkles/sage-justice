@@ -20,6 +20,9 @@ from core.style_generator import generate_styled_reviews, tones
 from core.async_queue import AsyncReviewQueue
 from core.proxy_manager import get_random_proxy
 from core.account_manager import get_random_account
+from core.report_generator import generate_report
+from core.exporter import export_reviews
+from core.logger import logger
 
 # Predefined categories and available resources for project management
 SITE_CATEGORIES = [
@@ -50,6 +53,7 @@ class MainGUI:
         self._build_logs_tab()
         self._build_template_tab()
         self._build_sites_tab()
+        self._build_reports_tab()
         self._build_settings_tab()
 
         self.status_var = tk.StringVar(value="Ready")
@@ -487,6 +491,63 @@ class MainGUI:
         self.notebook.add(frame, text="Sites")
         mgr = SiteManagerFrame(frame, on_update=self._refresh_site_list)
         mgr.pack(fill="both", expand=True)
+
+    # ------------------------------------------------------------------
+    # Reports & Export tab
+    def _build_reports_tab(self) -> None:
+        frame = ttk.Frame(self.notebook)
+        self.notebook.add(frame, text="Reports & Export")
+
+        ttk.Label(frame, text="Start Date (YYYY-MM-DD)").grid(row=0, column=0, sticky="w")
+        self.report_start_var = tk.StringVar()
+        ttk.Entry(frame, textvariable=self.report_start_var, width=15).grid(row=0, column=1, padx=5, pady=2)
+
+        ttk.Label(frame, text="End Date (YYYY-MM-DD)").grid(row=1, column=0, sticky="w")
+        self.report_end_var = tk.StringVar()
+        ttk.Entry(frame, textvariable=self.report_end_var, width=15).grid(row=1, column=1, padx=5, pady=2)
+
+        fmt_frame = ttk.Frame(frame)
+        fmt_frame.grid(row=2, column=0, columnspan=2, pady=4, sticky="w")
+        self.export_csv_var = tk.BooleanVar(value=True)
+        self.export_json_var = tk.BooleanVar(value=False)
+        self.export_pdf_var = tk.BooleanVar(value=False)
+        ttk.Checkbutton(fmt_frame, text="CSV", variable=self.export_csv_var).pack(side="left")
+        ttk.Checkbutton(fmt_frame, text="JSON", variable=self.export_json_var).pack(side="left", padx=4)
+        ttk.Checkbutton(fmt_frame, text="PDF", variable=self.export_pdf_var).pack(side="left")
+
+        ttk.Button(frame, text="Generate Report", command=self._generate_report).grid(row=3, column=0, columnspan=2, pady=4)
+        self.report_msg = tk.StringVar()
+        ttk.Label(frame, textvariable=self.report_msg).grid(row=4, column=0, columnspan=2, sticky="w")
+        frame.columnconfigure(1, weight=1)
+
+    def _generate_report(self) -> None:
+        start_text = self.report_start_var.get().strip()
+        end_text = self.report_end_var.get().strip()
+        try:
+            start_dt = datetime.fromisoformat(start_text) if start_text else None
+            end_dt = datetime.fromisoformat(end_text) if end_text else None
+        except ValueError:
+            messagebox.showerror("Reports", "Dates must be in YYYY-MM-DD format")
+            return
+
+        formats: list[str] = []
+        if self.export_csv_var.get():
+            formats.append("csv")
+        if self.export_json_var.get():
+            formats.append("json")
+        if self.export_pdf_var.get():
+            formats.append("pdf")
+
+        try:
+            summary = generate_report(start_dt, end_dt)
+            paths = export_reviews(start_dt, end_dt, formats)
+            msg = f"Report generated: {', '.join(p.name for p in paths)}"
+            self.report_msg.set(msg)
+            self.status_var.set(msg)
+            logger.info("Report summary: %s", summary)
+        except Exception as exc:
+            logger.exception("Failed to generate report: %s", exc)
+            messagebox.showerror("Reports", str(exc))
 
     # ------------------------------------------------------------------
     # Template tab
