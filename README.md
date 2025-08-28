@@ -171,9 +171,11 @@ Proxies disguise your network location.
 2. Type a proxy in the form `IP:PORT` or `USER:PASS@IP:PORT` and press **Add**.
 3. The table shows each proxy's status and region. Use **Test Proxy** to ping it and update the status.
 4. Use **Delete Selected** to remove entries. Proxy details are stored in the same `core/reviewbot.db` database.
+5. Proxies may be assigned at global, account, site, or project levels with weights and priorities via the database utilities.
 
 ### 5. Sites
 This tab lists all site templates found in the `templates/` directory. Selecting a site shows the fields defined for that website. Use it as a quick reference to verify that your template contains the necessary mappings.
+Remote repositories can be queried for available templates using the helper `list_remote_templates` in `core.site_registry` for easy importing.
 
 ### 6. Schedule
 The scheduler plans when each review will be posted.
