@@ -143,6 +143,15 @@ def init_db() -> None:
         )
         """
     )
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS site_projects (
+            site_name TEXT,
+            project TEXT,
+            UNIQUE(site_name, project)
+        )
+        """
+    )
     conn.commit()
     conn.close()
     _migrate_legacy_json()
@@ -486,6 +495,50 @@ def get_unassigned_accounts() -> list[Dict[str, Any]]:
     return [dict(r) for r in rows]
 
 
+def get_site_projects(site_name: str) -> list[str]:
+    """Return list of project names associated with a site."""
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT project FROM site_projects WHERE site_name=?",
+        (site_name,),
+    ).fetchall()
+    conn.close()
+    return [r["project"] for r in rows]
+
+
+def assign_site_to_project(site_name: str, project: str) -> None:
+    """Associate a site with a project."""
+    conn = get_connection()
+    conn.execute(
+        "INSERT OR IGNORE INTO site_projects (site_name, project) VALUES (?, ?)",
+        (site_name, project),
+    )
+    conn.commit()
+    conn.close()
+
+
+def remove_site_from_project(site_name: str, project: str) -> None:
+    """Remove a site's association with a project."""
+    conn = get_connection()
+    conn.execute(
+        "DELETE FROM site_projects WHERE site_name=? AND project=?",
+        (site_name, project),
+    )
+    conn.commit()
+    conn.close()
+
+
+def get_sites_for_project(project: str) -> list[str]:
+    """Return all site names linked to the given project."""
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT site_name FROM site_projects WHERE project=?",
+        (project,),
+    ).fetchall()
+    conn.close()
+    return [r["site_name"] for r in rows]
+
+
 def get_proxy_projects(proxy_id: int) -> list[str]:
     """Return list of project names associated with a proxy."""
     conn = get_connection()
@@ -780,6 +833,10 @@ __all__ = [
     "remove_account_from_project",
     "get_accounts_for_project",
     "get_unassigned_accounts",
+    "get_site_projects",
+    "assign_site_to_project",
+    "remove_site_from_project",
+    "get_sites_for_project",
     "job_counts",
     "count_reviews_today",
     "accounts_status_counts",

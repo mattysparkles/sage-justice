@@ -16,9 +16,9 @@ from core import database
 from core.config_loader import load_json_config
 from core.style_generator import generate_styled_reviews
 from core import project_hub
-from core.site_config_loader import SiteConfigLoader
 from scheduler.schedule_engine import ReviewScheduler
 from gui.template_manager_gui import TemplateManagerFrame
+from gui.site_manager_gui import SiteManagerFrame
 from core.queue_manager import JobQueueManager
 from core.logger import logger
 from core.serp_scanner import check_review_visibility
@@ -976,18 +976,9 @@ class GuardianDeck(tk.Tk):
 
     # --- SITES --------------------------------------------------------
     def create_sites_tab(self, frame: ttk.Frame) -> None:
-        loader = SiteConfigLoader(TEMPLATES_DIR)
-        sites = loader.load_templates()
-        text = ScrolledText(frame)
-        text.pack(fill="both", expand=True, padx=10, pady=5)
-        for name, conf in sites.items():
-            fields = conf.get("fields") or conf.get("review_fields", [])
-            if isinstance(fields, dict):
-                field_names = list(fields.keys())
-            else:
-                field_names = list(fields)
-            text.insert("end", f"{name}: {field_names}\n")
-        text.config(state="disabled")
+        manager = SiteManagerFrame(frame, on_update=self.refresh_projects_tab)
+        manager.pack(fill="both", expand=True)
+        self.site_manager = manager
 
     # --- SCHEDULER ----------------------------------------------------
     def create_scheduler_tab(self, frame: ttk.Frame) -> None:
