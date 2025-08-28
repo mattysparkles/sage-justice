@@ -38,3 +38,13 @@ def test_mark_and_retry(tmp_path):
     with database.get_connection() as conn:
         status = conn.execute("SELECT status FROM jobs WHERE job_id=?", (job_id,)).fetchone()[0]
         assert status == "Pending"
+
+
+def test_load_queue(tmp_path):
+    database, JobQueueManager = setup_db(tmp_path)
+    manager = JobQueueManager()
+    manager.add_job("a", "text", scheduled_time=time.time())
+    manager.add_job("b", "text", scheduled_time=time.time())
+    manager.load_queue()
+    assert len(manager.queue) == 2
+    assert all(isinstance(job["scheduled_time"], float) for job in manager.queue)
