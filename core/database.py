@@ -13,6 +13,7 @@ import sqlite3
 import uuid
 from datetime import datetime
 from pathlib import Path
+import random
 from typing import Any, Dict, Optional
 
 # ---------------------------------------------------------------------------
@@ -102,6 +103,18 @@ def init_db() -> None:
             proxy_id INTEGER,
             project TEXT,
             UNIQUE(proxy_id, project)
+        )
+        """
+    )
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS proxy_assignments (
+            proxy_id INTEGER,
+            level TEXT,
+            target TEXT,
+            weight INTEGER DEFAULT 1,
+            priority INTEGER DEFAULT 0,
+            UNIQUE(proxy_id, level, target)
         )
         """
     )
@@ -355,13 +368,19 @@ def retry_failed_jobs() -> None:
 
 def fetch_proxy() -> Optional[Dict[str, Any]]:
     """Return the next proxy to use."""
+    proxy = fetch_proxy_for_scope("global", None)
+    if proxy:
+        return proxy
     conn = get_connection()
     cur = conn.cursor()
     row = cur.execute(
         "SELECT * FROM proxies ORDER BY last_tested ASC NULLS FIRST LIMIT 1"
     ).fetchone()
     if row:
-        cur.execute("UPDATE proxies SET last_tested = CURRENT_TIMESTAMP WHERE id=?", (row["id"],))
+        cur.execute(
+            "UPDATE proxies SET last_tested = CURRENT_TIMESTAMP WHERE id=?",
+            (row["id"],),
+        )
         conn.commit()
     conn.close()
     return dict(row) if row else None
@@ -513,6 +532,74 @@ def get_proxies_for_project(project: str) -> list[Dict[str, Any]]:
     ).fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+
+def assign_proxy(
+    proxy_id: int,
+    level: str,
+    target: str | int | None = None,
+    weight: int = 1,
+    priority: int = 0,
+) -> None:
+    """Assign a proxy to a scope with optional weighting and priority."""
+    conn = get_connection()
+    conn.execute(
+        """
+        INSERT OR REPLACE INTO proxy_assignments
+            (proxy_id, level, target, weight, priority)
+        VALUES (?, ?, ?, ?, ?)
+        """,
+        (proxy_id, level, str(target) if target is not None else None, weight, priority),
+    )
+    conn.commit()
+    conn.close()
+
+
+def remove_proxy_assignment(proxy_id: int, level: str, target: str | int | None = None) -> None:
+    """Remove a proxy assignment from a scope."""
+    conn = get_connection()
+    conn.execute(
+        "DELETE FROM proxy_assignments WHERE proxy_id=? AND level=? AND target IS ?",
+        (proxy_id, level, str(target) if target is not None else None),
+    )
+    conn.commit()
+    conn.close()
+
+
+def fetch_proxy_for_scope(level: str, target: str | int | None = None) -> Optional[Dict[str, Any]]:
+    """Return a proxy assigned to the given scope respecting priority and weight."""
+    conn = get_connection()
+    cur = conn.cursor()
+    rows = cur.execute(
+        """
+        SELECT p.*, pa.weight, pa.priority
+        FROM proxy_assignments pa
+        JOIN proxies p ON p.id = pa.proxy_id
+        WHERE pa.level=? AND (pa.target IS ?)
+        """,
+        (level, str(target) if target is not None else None),
+    ).fetchall()
+    if not rows and level != "global":
+        conn.close()
+        return fetch_proxy_for_scope("global", None)
+    if not rows:
+        conn.close()
+        return None
+    max_priority = max(r["priority"] for r in rows)
+    candidates = [r for r in rows if r["priority"] == max_priority]
+    total_weight = sum(r["weight"] for r in candidates)
+    choice = random.uniform(0, total_weight)
+    upto = 0.0
+    selected = candidates[0]
+    for r in candidates:
+        upto += r["weight"]
+        if choice <= upto:
+            selected = r
+            break
+    cur.execute("UPDATE proxies SET last_tested=CURRENT_TIMESTAMP WHERE id=?", (selected["id"],))
+    conn.commit()
+    conn.close()
+    return dict(selected)
 
 
 # Additional helpers for management GUIs
@@ -679,6 +766,9 @@ __all__ = [
     "add_proxy",
     "delete_proxy",
     "update_proxy",
+    "assign_proxy",
+    "remove_proxy_assignment",
+    "fetch_proxy_for_scope",
     "get_proxy_projects",
     "assign_proxy_to_project",
     "remove_proxy_from_project",

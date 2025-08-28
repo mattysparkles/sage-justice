@@ -12,8 +12,8 @@ def load_proxies(file_path: str | None = None) -> list[str]:
     return [f"{r['ip_address']}:{r['port']}" for r in rows]
 
 
-def get_random_proxy() -> str | None:
-    proxy = database.fetch_proxy()
+def get_random_proxy(level: str = "global", target: str | int | None = None) -> str | None:
+    proxy = database.fetch_proxy_for_scope(level, target)
     if proxy:
         return f"{proxy['ip_address']}:{proxy['port']}"
     return None

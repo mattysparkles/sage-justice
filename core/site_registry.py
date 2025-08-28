@@ -5,6 +5,8 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List
 
+import requests
+
 SITE_DIR = Path("templates/sites")
 REGISTRY_PATH = Path("config/site_registry.json")
 
@@ -141,3 +143,19 @@ def export_site(name: str, destination: Path) -> None:
     data = get_site(name)
     with open(destination, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
+
+
+def list_remote_templates(repo_url: str) -> List[str]:
+    """List available site templates in a remote GitHub repository."""
+    api_url = (
+        repo_url.rstrip("/")
+        .replace("github.com", "api.github.com/repos")
+        + "/contents/templates/sites"
+    )
+    try:
+        resp = requests.get(api_url, timeout=10)
+        resp.raise_for_status()
+        data = resp.json()
+    except Exception:
+        return []
+    return [item["name"] for item in data if item.get("name", "").endswith(".json")]
