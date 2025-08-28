@@ -1,13 +1,14 @@
 :root {
-  --primary-color: #2c3e50;
-  --accent-color: #3498db;
+  --primary-color: #1e3a8a;
+  --accent-color: #ff6b35;
   --bg-color: #f4f6f9;
   --card-bg: #ffffff;
   --border-color: #e0e0e0;
-  --text-color: #333333;
-  --success-bg: #d4edda;
-  --warning-bg: #fff3cd;
-  --error-bg: #f8d7da;
+  --text-color: #1f2937;
+  --hero-bg: linear-gradient(135deg, #0a2540, #1e3a8a);
+  --success-bg: #d1fae5;
+  --warning-bg: #fef3c7;
+  --error-bg: #fee2e2;
 }
 
 body {
@@ -15,6 +16,7 @@ body {
   background: var(--bg-color);
   color: var(--text-color);
   margin: 0;
+  line-height: 1.6;
 }
 
 .container {
@@ -23,13 +25,29 @@ body {
   padding: 20px;
 }
 
-h1 {
+.hero {
+  background: var(--hero-bg);
+  color: #fff;
   text-align: center;
-  color: var(--primary-color);
-  margin-bottom: 30px;
+  padding: 60px 20px;
 }
 
-section {
+.hero .tagline {
+  margin-top: 10px;
+  font-size: 1.25rem;
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: 2.5rem;
+  font-weight: 600;
+}
+
+main {
+  margin-top: -30px;
+}
+
+.card {
   background: var(--card-bg);
   margin-bottom: 30px;
   padding: 20px;
@@ -72,18 +90,20 @@ section {
   font-family: inherit;
 }
 
-#submit-form button {
+.btn-primary {
   background: var(--accent-color);
   color: #fff;
   border: none;
-  padding: 10px 15px;
-  border-radius: 4px;
+  padding: 10px 20px;
+  border-radius: 6px;
   cursor: pointer;
-  transition: background 0.3s ease;
+  font-size: 1rem;
+  transition: background 0.3s ease, transform 0.2s ease;
 }
 
-#submit-form button:hover {
-  background: #2b80b9;
+.btn-primary:hover {
+  background: #e85d2a;
+  transform: translateY(-2px);
 }
 
 #logs {

@@ -10,37 +10,43 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="container">
-  <h1>Sage Justice Dashboard</h1>
+  <header class="hero">
+    <div class="hero-content">
+      <h1>Sage Justice Dashboard</h1>
+      <p class="tagline">Effortlessly run review posting campaigns</p>
+      <button id="get-started-btn" class="btn-primary">Get Started</button>
+    </div>
+  </header>
 
-  <section id="status-section">
-    <h2>Status</h2>
-    <table id="status-table">
-      <thead>
-        <tr><th>Type</th><th>Status</th><th>Count</th></tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </section>
+  <main class="container">
+    <section id="status-section" class="card">
+      <h2>Status</h2>
+      <table id="status-table">
+        <thead>
+          <tr><th>Type</th><th>Status</th><th>Count</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
 
-  <section id="submit-section">
-    <h2>Submit Review</h2>
-    <form id="submit-form">
-      <input type="text" id="site" placeholder="Site" required>
-      <input type="text" id="template" placeholder="Template">
-      <textarea id="review-text" placeholder="Review text" required></textarea>
-      <input type="number" id="proxy" placeholder="Proxy ID">
-      <input type="number" id="account" placeholder="Account ID">
-      <button type="submit">Submit</button>
-    </form>
-  </section>
+    <section id="submit-section" class="card">
+      <h2>Submit Review</h2>
+      <form id="submit-form">
+        <input type="text" id="site" placeholder="Site" required>
+        <input type="text" id="template" placeholder="Template">
+        <textarea id="review-text" placeholder="Review text" required></textarea>
+        <input type="number" id="proxy" placeholder="Proxy ID">
+        <input type="number" id="account" placeholder="Account ID">
+        <button type="submit" class="btn-primary">Submit</button>
+      </form>
+    </section>
 
-  <section id="log-section">
-    <h2>Posted Reviews</h2>
-    <div id="logs"></div>
-  </section>
+    <section id="log-section" class="card">
+      <h2>Posted Reviews</h2>
+      <div id="logs"></div>
+    </section>
+  </main>
 
-  </div>
   <script src="dashboard.js"></script>
 </body>
 </html>
