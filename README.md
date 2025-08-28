@@ -1,233 +1,246 @@
 # Sage Justice
 
 **AI-Powered Review Automation for Truthful, Drip-Fed Accountability**  
-_Built by Sparkles & Sage — Justice is a dish best served... continuously._
+*Built by Sparkles & Sage — Justice is a dish best served... continuously.*
 
 ---
 
-## 🧠 Overview
-
-**Sage Justice** is a powerful review automation suite designed to help users publish **factual**, **unique**, and **well-distributed** reviews across multiple platforms. Originally built to bring attention to unethical professional conduct, Sage Justice makes sure every voice is heard — one post at a time.
-
-Inspired by the need for ongoing, rotating accountability, the app uses AI to vary the phrasing of reviews without compromising the truth. You get SERP-safe content, automated posting (via Selenium), proxy rotation, and a clean GUI to manage everything.
-
----
-
-## ✨ Features
-
-- ✅ **AI-powered Review Spinner** (OpenAI GPT API)
-- 🧾 **Multi-platform field-mapping system** for unique review site layouts
-- 🧠 **Intelligent content variation** to bypass duplicate detection
-- ⏳ **Dripfeed Scheduler** — publish reviews gradually over 30/60/90 days
-- 🌐 **IP / Proxy / VPN Rotation Support**
-- 👥 **Account Rotation** — swap between accounts per platform
-- 🖥️ **Tkinter dashboard with multi-tab management**
-- 🔒 **Secure API key storage (external)**
+## 📘 Table of Contents
+1. [What Is Sage Justice?](#what-is-sage-justice)
+2. [Who Is This Guide For?](#who-is-this-guide-for)
+3. [Before You Begin](#before-you-begin)
+4. [Step-by-Step Installation](#step-by-step-installation)
+5. [Running the Program](#running-the-program)
+6. [Understanding the Interface](#understanding-the-interface)
+7. [Feature Walkthrough](#feature-walkthrough)
+8. [How the Automation Works](#how-the-automation-works)
+9. [Troubleshooting & FAQ](#troubleshooting--faq)
+10. [Folder Structure](#folder-structure)
+11. [Roadmap](#roadmap)
+12. [Legal & Contributions](#legal--contributions)
 
 ---
 
-## 🛠 Installation
+## What Is Sage Justice?
+Sage Justice is a software suite that automatically publishes **factual**, **unique**, and **slowly drip-fed** reviews to multiple websites. It was originally created to highlight unethical professional conduct, making sure honest experiences reach the public over time.
 
-1. **Clone the repo**:
+The system uses artificial intelligence (AI) to rewrite reviews without changing their meaning. It rotates user accounts and network addresses, and it schedules posts gradually so they appear natural.
+
+---
+
+## Who Is This Guide For?
+This guide assumes **no prior computer knowledge**. Every step is written for people who have never used a terminal, installed software, or edited a file. If you already know how to use a computer, feel free to skim the basics.
+
+---
+
+## Before You Begin
+### 1. Hardware and Internet
+- A computer running Windows 10+, macOS 11+, or a modern Linux distribution.
+- A stable internet connection.
+
+### 2. Software to Install
+We will install these together during the setup:
+- **Git** – a tool to download the project.
+- **Python 3.11+** – the language the program is written in.
+- **Google Chrome** – required for automated web browsing.
+
+---
+
+## Step-by-Step Installation
+### Step 1 – Open a Terminal
+A *terminal* is a text-based window for giving commands to the computer.
+- **Windows**: Press `Start`, type `cmd`, and press `Enter`.
+- **macOS**: Open `Finder` → `Applications` → `Utilities` → `Terminal`.
+- **Linux**: Press `Ctrl` + `Alt` + `T`.
+
+### Step 2 – Install Git
+- **Windows**: Visit [git-scm.com](https://git-scm.com/download/win), download the installer, and run it with default options.
+- **macOS**: In the terminal, type `xcode-select --install` and follow the prompts.
+- **Linux**: In the terminal, type `sudo apt install git` and press `Enter`.
+
+### Step 3 – Install Python
+- Go to [python.org/downloads](https://www.python.org/downloads/) and download the latest version for your operating system.
+- Run the installer. **On Windows, make sure to check the box that says “Add Python to PATH.”**
+
+### Step 4 – Install Google Chrome
+- Download from [google.com/chrome](https://www.google.com/chrome/).
+- Run the installer with default options.
+
+### Step 5 – Download Sage Justice
+In your terminal, type:
+```bash
+git clone https://github.com/mattysparkles/sage-justice.git
+cd sage-justice
+```
+This downloads the project folder and moves you into it.
+
+### Step 6 – Install Python Dependencies
+Still in the terminal, type:
+```bash
+pip install -r requirements.txt
+```
+This installs all libraries that Sage Justice needs.
+
+### Step 7 – Add Your OpenAI API Key
+The program uses OpenAI’s GPT models. You need an API key.
+1. Create an account at [platform.openai.com](https://platform.openai.com/).
+2. Generate a new API key and copy it.
+3. In your terminal, type:
    ```bash
-   git clone https://github.com/mattysparkles/sage-justice.git
-   cd sage-justice
+   mkdir -p config
+   nano config/settings.local.json
    ```
-
-2. **Install dependencies**:
-   ```bash
-   pip install -r requirements.txt
+4. Paste the following, replacing `YOURKEY` with your key:
+   ```json
+   {
+     "openai_api_key": "sk-YOURKEY"
+   }
    ```
-
-3. **Add your OpenAI API key**:
-   - Create a file called `settings.local.json` inside the `/config` folder (⚠️ Do not commit this).
-   - Example:
-     ```json
-     {
-       "openai_api_key": "sk-...YOURKEY..."
-     }
-     ```
-
-4. **Run the app**:
-   ```bash
-   python dashboard/main_gui.py
-   ```
-
-### 🗂 Guardian Deck Tabs
-
-The GUI uses a tabbed layout for managing different parts of the system:
-
-| Tab | Purpose |
-|-----|---------|
-| **Review Generator** | Create reviews from a text prompt and optionally rewrite them. |
-| **Templates** | View and edit JSON site templates. |
-| **Accounts** | Maintain site login credentials in `accounts/accounts.json`. |
-| **Proxies** | Add or remove proxies stored in `proxy/proxy_list.txt`. |
-| **Sites** | Display supported sites loaded from template configurations. |
-| **Schedule** | Add drip-feed jobs and start the background scheduler. |
-| **Logs** | Show the last 100 lines from `logs/post_log.csv` or `logs/app.log`. |
-| **Settings** | Save the OpenAI API key and choose the model (e.g., `gpt-4`). |
+5. Press `Ctrl` + `O` then `Enter` to save, and `Ctrl` + `X` to exit.
 
 ---
 
-## 🧪 How It Works
+## Running the Program
+In the terminal, make sure you are inside the `sage-justice` folder. Then type:
+```bash
+python dashboard/main_gui.py
+```
+A window will appear. This is the main control panel.
 
-1. **Enter a review context** (what happened, what you want to say).
-2. The AI engine spins **multiple unique but factually accurate reviews**.
-3. Reviews are added to your drip queue and optionally saved locally.
-4. A scheduling engine posts them slowly over time using Selenium.
-5. Each post can:
-   - Rotate accounts
-   - Switch IPs via proxies
-   - Post to different platforms
-   - Mimic human input timing
+**First-time tip:** If nothing happens or you see an error, read the troubleshooting section below.
 
 ---
 
-## 🧩 Folder Structure
+## Understanding the Interface
+The dashboard uses tabs along the top to organize features. You can click a tab to switch sections.
 
+| Tab | What It Does |
+| --- | --- |
+| **Review Generator** | Write or rewrite reviews with AI. |
+| **Templates** | Configure how different websites accept reviews. |
+| **Accounts** | Store usernames and passwords for each site. |
+| **Proxies** | List IP addresses to hide your location. |
+| **Sites** | View all supported review platforms. |
+| **Schedule** | Plan when reviews should be posted. |
+| **Logs** | Read records of what has been posted. |
+| **Settings** | Save your OpenAI key and choose the AI model. |
+
+Each tab has buttons and text fields. Move your mouse over a field, click it, and type.
+
+---
+
+## Feature Walkthrough
+### 1. Review Generator
+1. Click the **Review Generator** tab.
+2. In the **Prompt** box, type the situation or message you want to express.
+3. Click **Generate**. The AI creates one or more reviews.
+4. To rewrite a review, select it and click **Rewrite**.
+5. Click **Save** to keep the reviews on your computer.
+
+### 2. Templates
+Templates tell the program where to click and what to fill out on each review website.
+1. Click **Templates**.
+2. Load an existing template or create a new one.
+3. For new templates, follow the on-screen prompts to map fields (name, rating, review text, etc.).
+4. Save templates as JSON files in the `templates/` folder.
+
+### 3. Accounts
+1. Click **Accounts**.
+2. Add a new entry with the website name, username, and password.
+3. The data is saved in `accounts/accounts.json`. Keep this file private.
+
+### 4. Proxies
+1. Click **Proxies**.
+2. Enter one proxy per line in the format `http://USER:PASS@HOST:PORT`.
+3. The list is saved to `proxy/proxy_list.txt`.
+
+### 5. Sites
+This tab shows which sites are available based on your templates. Select a site to view details.
+
+### 6. Schedule
+1. Click **Schedule**.
+2. Choose a review, site, account, and date.
+3. Click **Add Job** to queue it.
+4. Press **Start Scheduler** to begin automated posting.
+
+### 7. Logs
+Use this tab to view the last 100 lines of:
+- `logs/post_log.csv` – record of postings.
+- `logs/app.log` – general application logs.
+
+### 8. Settings
+1. Enter your OpenAI API key (again) and choose the model (e.g., `gpt-4`).
+2. Click **Save Settings**.
+
+---
+
+## How the Automation Works
+1. **Review Creation:** You supply a prompt; the AI produces variations.
+2. **Queueing:** Reviews are scheduled with dates and times.
+3. **Posting:** The scheduler opens Chrome using Selenium, logs into accounts, and submits reviews.
+4. **Rotation:** Each post can use a different account and proxy to avoid detection.
+5. **Logging:** Results are stored in log files for later review.
+
+---
+
+## Troubleshooting & FAQ
+### Nothing happens when I run `python dashboard/main_gui.py`
+- Ensure Python is installed: `python --version`.
+- On some systems the command is `python3` instead of `python`.
+
+### The program cannot find my OpenAI key
+- Confirm `config/settings.local.json` exists and contains your key.
+- The file must be valid JSON. Use double quotes around the key.
+
+### Chrome does not open or automation fails
+- Confirm Google Chrome is installed.
+- Make sure `chromedriver` is compatible with your Chrome version. Some Selenium setups handle this automatically; otherwise, install `webdriver-manager`.
+
+### How do I stop the scheduler?
+- Close the scheduler window or press `Ctrl` + `C` in the terminal running the program.
+
+### Where are my reviews stored?
+- Generated text is stored in the `output/` folder.
+- Logs are under `logs/`.
+
+---
+
+## Folder Structure
 ```
 sage-justice/
+├── accounts/
 ├── config/
-│   └── settings.json (default)
 ├── core/
-│   └── review_generator.py
-├── gui/
-│   └── main_gui.py
+├── dashboard/
+├── logs/
+├── output/
+├── proxy/
 ├── templates/
-│   └── google_review.json
-├── style/
-│   └── style.css
 └── README.md
 ```
 
 ---
 
-## 🔮 Roadmap
-
-| Arc | Name                     | Status      |
-|-----|--------------------------|-------------|
-| 1   | Initial Project Setup    | ✅ Complete |
-| 2   | Review Generator Core    | ✅ Complete |
-| 3   | GUI Builder              | ✅ Complete |
-| 4   | Dripfeed Scheduling      | ✅ Complete |
-| 5   | Proxy/Account Rotation   | ✅ Complete |
-| 6   | Template + Mapping Setup | ✅ Complete |
-| 7+  | Cross-platform Testing   | 🚧 Pending  |
-| 8+  | Plugin System & Export   | 🔮 Planning |
-
----
-
-## 💡 Usage Ideas
-
-- Publish true stories about bad services or unethical behavior without being silenced by filters.
-- Hold companies, agencies, or individuals publicly accountable over time.
-- Automate reputation management in a way that’s **ethical** and **honest**.
-- Create a consistent digital trail without risking content bans.
+## Roadmap
+| Arc | Name | Status |
+| --- | --- | --- |
+| 1 | Initial Project Setup | ✅ Complete |
+| 2 | Review Generator Core | ✅ Complete |
+| 3 | GUI Builder | ✅ Complete |
+| 4 | Dripfeed Scheduling | ✅ Complete |
+| 5 | Proxy/Account Rotation | ✅ Complete |
+| 6 | Template + Mapping Setup | ✅ Complete |
+| 7+ | Cross-platform Testing | 🚧 Pending |
+| 8+ | Plugin System & Export | 🔮 Planning |
 
 ---
 
-# ArcPhase 21 – Review Site Categorization & Template Mapping
-
-## 🎯 Objective
-Establish foundational review site categories, build a curated database of target platforms, and begin Selenium automation templates for each.
-
----
-
-## 🧩 Site Categories
-
-| Category         | Description                                      |
-|------------------|--------------------------------------------------|
-| Legal            | Lawyers, firms, legal aid, etc.                  |
-| General Business | Any commercial business or professional service  |
-| Food & Beverage  | Restaurants, cafes, bars                         |
-| Consumer Goods   | Electronics, appliances, gadgets                 |
-| Home Services    | Plumbing, HVAC, landscaping, repairs             |
-| Auto Services    | Dealerships, mechanics, rentals                  |
-| Healthcare       | Doctors, dentists, hospitals                     |
-| Real Estate      | Agents, brokers, listings                        |
-| Education        | Schools, tutors, online classes                  |
-| Miscellaneous    | Any uncategorized or niche review platforms      |
+## Legal & Contributions
+- **Truthfulness:** This tool is meant for honest, factual reviews only.
+- **Terms of Service:** Always respect the rules of each review platform.
+- **License:** MIT – see `LICENSE` file.
+- **Contributing:** Pull requests are welcome. Please open an issue to discuss major changes first.
 
 ---
 
-## 🌐 Predefined Review Sites by Category
-
-### 🔍 Legal
-- [Avvo](https://www.avvo.com)
-- [Lawyers.com](https://www.lawyers.com)
-- [Justia](https://www.justia.com)
-- [Martindale](https://www.martindale.com)
-
-### 🏢 General Business
-- [Google Reviews](https://google.com/maps)
-- [Trustpilot](https://www.trustpilot.com)
-- [Better Business Bureau (BBB)](https://www.bbb.org)
-- [Yellow Pages](https://www.yellowpages.com)
-- [Glassdoor](https://www.glassdoor.com)
-
-### 🍽️ Food & Beverage
-- [Yelp](https://www.yelp.com)
-- [Zomato](https://www.zomato.com)
-- [TripAdvisor](https://www.tripadvisor.com)
-- [OpenTable](https://www.opentable.com)
-
-### 🛠️ Services (Home, Auto, etc.)
-- [Angi (formerly Angie’s List)](https://www.angi.com)
-- [HomeAdvisor](https://www.homeadvisor.com)
-- [RepairPal](https://www.repairpal.com)
-- [DealerRater](https://www.dealerrater.com)
-
-### 🩺 Healthcare
-- [Healthgrades](https://www.healthgrades.com)
-- [Vitals](https://www.vitals.com)
-- [Zocdoc](https://www.zocdoc.com)
-
----
-
-## 🤖 Selenium Template Strategy
-
-Each site will receive a JSON or Python template stored in `/templates/sites/{site_name}.json` that includes:
-
-- Input field selectors (Name, Review, Rating, etc.)
-- Login flow (if required)
-- Navigation mapping (URL path, click order)
-- CAPTCHA workaround requirements
-
-Templates are recorded via:
-1. Manual path recording via GUI step-through (already in Phase 2)
-2. Saving detected input paths and success conditions per site
-
----
-
-## ✅ Phase Deliverables
-
-- Categorized site registry
-- `site_registry.json` config file
-- At least 10 Selenium-ready template JSONs under `/templates/sites/`
-- A toggle in GUI to switch categories and see matched sites
-- Auto-template-injection to ReviewBot for 1-click posting
-
----
-
-This phase unlocks powerful commercial potential by reducing friction for everyday users. It's a massive UX win.
-
-
-## 🧠 About
-
-**Sage Justice** is a collaboration between [@mattysparkles](https://github.com/mattysparkles) and Sage, designed to empower individuals with AI tools that tell the truth and do it with style
----
-
-## ⚠️ Legal Note
-
-This tool is designed **only for factual, truthful reviews**. False or defamatory content is not supported or condoned. Always check terms of service of each review platform before posting.
-
----
-
-## 📬 License & Contributions
-
-License: `MIT`
-
-PRs are welcome. If you'd like to contribute modules, templates, or review site mappings, open an issue or submit a pull request.
-
----
+Happy reviewing! If you get stuck, read the troubleshooting section again or ask a tech-savvy friend for help.
