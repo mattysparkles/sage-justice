@@ -1,6 +1,7 @@
 """Main Tkinter GUI for Sage Justice dashboard."""
 
 import json
+import math
 import random
 import tkinter as tk
 from datetime import datetime, timedelta
@@ -9,14 +10,14 @@ from tkinter import messagebox, simpledialog
 from tkinter import ttk
 from tkinter.scrolledtext import ScrolledText
 
-from core.account_manager import load_accounts
+import requests
+
+from core import database
 from core.config_loader import load_json_config
 from core.review_generator import generate_reviews
 from core.review_spinner import generate_variants
 from core.site_config_loader import SiteConfigLoader
 from scheduler.schedule_engine import ReviewScheduler
-from proxy.manager import ProxyManager
-from gui.proxy_manager_gui import ProxyManagerFrame
 from gui.template_manager_gui import TemplateManagerFrame
 from core.queue_manager import JobQueueManager
 
@@ -44,6 +45,8 @@ class GuardianDeck(tk.Tk):
     def create_widgets(self) -> None:
         ttk.Label(self, text="SAGE JUSTICE - Guardian Deck", font=("Helvetica", 16)).pack(pady=10)
 
+        self.create_overview_panel()
+
         notebook = ttk.Notebook(self)
         notebook.pack(expand=True, fill="both")
 
@@ -63,6 +66,48 @@ class GuardianDeck(tk.Tk):
             frame = ttk.Frame(notebook)
             notebook.add(frame, text=name)
             creator(frame)
+
+    def create_overview_panel(self) -> None:
+        panel = ttk.Frame(self)
+        panel.pack(fill="x", padx=10, pady=5)
+
+        stats_frame = ttk.Frame(panel)
+        stats_frame.pack(side="left", fill="x", expand=True)
+        self.job_status_var = tk.StringVar()
+        ttk.Label(stats_frame, textvariable=self.job_status_var).pack(anchor="w")
+        self.review_count_var = tk.StringVar()
+        ttk.Label(stats_frame, textvariable=self.review_count_var).pack(anchor="w")
+
+        charts_frame = ttk.Frame(panel)
+        charts_frame.pack(side="right")
+        self.accounts_canvas = tk.Canvas(charts_frame, width=100, height=100)
+        self.accounts_canvas.pack(side="left", padx=5)
+        self.proxies_canvas = tk.Canvas(charts_frame, width=100, height=100)
+        self.proxies_canvas.pack(side="left", padx=5)
+
+        self.refresh_overview()
+
+    def refresh_overview(self) -> None:
+        counts = database.job_counts()
+        pending = counts.get("Pending", 0)
+        running = counts.get("Running", 0)
+        failed = counts.get("Failed", 0)
+        self.job_status_var.set(f"Job Queue: {pending} Pending, {running} Running, {failed} Failed")
+        reviews_today = database.count_reviews_today()
+        self.review_count_var.set(f"Reviews Posted Today: {reviews_today}")
+        self.draw_pie_chart(self.accounts_canvas, database.accounts_status_counts())
+        self.draw_pie_chart(self.proxies_canvas, database.proxies_region_counts())
+        self.after(60000, self.refresh_overview)
+
+    def draw_pie_chart(self, canvas: tk.Canvas, data: dict[str, int]) -> None:
+        canvas.delete("all")
+        total = sum(data.values()) or 1
+        start = 0.0
+        colors = ["green", "orange", "red", "blue", "purple", "gray"]
+        for i, (label, value) in enumerate(data.items()):
+            extent = 360 * (value / total)
+            canvas.create_arc(10, 10, 90, 90, start=start, extent=extent, fill=colors[i % len(colors)])
+            start += extent
 
     # --- REVIEW GENERATOR --------------------------------------------
     def create_review_tab(self, frame: ttk.Frame) -> None:
@@ -292,29 +337,156 @@ class GuardianDeck(tk.Tk):
 
     # --- ACCOUNTS -----------------------------------------------------
     def create_accounts_tab(self, frame: ttk.Frame) -> None:
-        self.accounts_editor = ScrolledText(frame)
-        self.accounts_editor.pack(fill="both", expand=True, padx=10, pady=5)
-        ttk.Button(frame, text="Save", command=self.save_accounts).pack(pady=5)
-        try:
-            data = json.dumps(load_accounts(ACCOUNTS_PATH), indent=2)
-            self.accounts_editor.insert("1.0", data)
-        except FileNotFoundError:
-            self.accounts_editor.insert("1.0", "[]")
+        columns = ("username", "category", "status", "last_used")
+        self.accounts_tree = ttk.Treeview(frame, columns=columns, show="headings")
+        for col in columns:
+            self.accounts_tree.heading(col, text=col.replace("_", " ").title())
+        self.accounts_tree.column("status", width=100, anchor="center")
+        self.accounts_tree.pack(fill="both", expand=True, padx=10, pady=5)
+        self.accounts_tree.tag_configure("healthy", foreground="green")
+        self.accounts_tree.tag_configure("warning", foreground="orange")
+        self.accounts_tree.tag_configure("failed", foreground="red")
 
-    def save_accounts(self) -> None:
-        try:
-            data = json.loads(self.accounts_editor.get("1.0", "end"))
-            with open(ACCOUNTS_PATH, "w", encoding="utf-8") as f:
-                json.dump(data, f, indent=2)
-            messagebox.showinfo("Accounts", "Accounts saved.")
-        except json.JSONDecodeError:
-            messagebox.showerror("Accounts", "Invalid JSON")
+        btns = ttk.Frame(frame)
+        btns.pack(pady=5)
+        ttk.Button(btns, text="Add Account", command=self.add_account_dialog).pack(side="left", padx=5)
+        ttk.Button(btns, text="Delete Selected", command=self.delete_selected_account).pack(side="left", padx=5)
+        ttk.Button(btns, text="Mark as Failed", command=self.mark_account_failed).pack(side="left", padx=5)
+
+        self.refresh_accounts()
+
+    def refresh_accounts(self) -> None:
+        for item in self.accounts_tree.get_children():
+            self.accounts_tree.delete(item)
+        for acc in database.get_all_accounts():
+            status = acc.get("health_status") or "warning"
+            tag = status if status in ("healthy", "failed") else "warning"
+            self.accounts_tree.insert(
+                "",
+                "end",
+                iid=acc["id"],
+                values=(
+                    acc.get("username"),
+                    acc.get("category"),
+                    status,
+                    acc.get("last_used", ""),
+                ),
+                tags=(tag,),
+            )
+
+    def add_account_dialog(self) -> None:
+        username = simpledialog.askstring("Add Account", "Username:")
+        if not username:
+            return
+        password = simpledialog.askstring("Add Account", "Password:", show="*")
+        if password is None:
+            return
+        category = simpledialog.askstring("Add Account", "Category:") or "general"
+        database.add_account(username, password, category)
+        self.refresh_accounts()
+
+    def delete_selected_account(self) -> None:
+        sel = self.accounts_tree.selection()
+        if not sel:
+            return
+        account_id = int(sel[0])
+        database.delete_account(account_id)
+        self.refresh_accounts()
+
+    def mark_account_failed(self) -> None:
+        sel = self.accounts_tree.selection()
+        if not sel:
+            return
+        account_id = int(sel[0])
+        database.update_account_health(account_id, "failed")
+        self.refresh_accounts()
 
     # --- PROXIES ------------------------------------------------------
     def create_proxy_tab(self, frame: ttk.Frame) -> None:
-        manager = ProxyManager(path="proxy/proxy_list.txt")
-        proxy_frame = ProxyManagerFrame(frame, manager)
-        proxy_frame.pack(fill="both", expand=True, padx=10, pady=5)
+        columns = ("ip", "port", "region", "status")
+        self.proxy_tree = ttk.Treeview(frame, columns=columns, show="headings")
+        for col in columns:
+            self.proxy_tree.heading(col, text=col.title())
+        self.proxy_tree.column("status", width=100, anchor="center")
+        self.proxy_tree.pack(fill="both", expand=True, padx=10, pady=5)
+        self.proxy_tree.tag_configure("Working", foreground="green")
+        self.proxy_tree.tag_configure("Down", foreground="red")
+        self.proxy_tree.tag_configure("Unknown", foreground="orange")
+
+        entry = ttk.Frame(frame)
+        entry.pack(fill="x", padx=10, pady=5)
+        self.proxy_entry = ttk.Entry(entry)
+        self.proxy_entry.pack(side="left", fill="x", expand=True)
+        ttk.Button(entry, text="Add", command=self.add_proxy).pack(side="left", padx=5)
+        ttk.Button(entry, text="Delete Selected", command=self.delete_proxy).pack(side="left", padx=5)
+        ttk.Button(entry, text="Test Proxy", command=self.test_selected_proxy).pack(side="left")
+
+        self.refresh_proxies()
+
+    def refresh_proxies(self) -> None:
+        for item in self.proxy_tree.get_children():
+            self.proxy_tree.delete(item)
+        for proxy in database.get_all_proxies():
+            tag = proxy.get("status") or "Unknown"
+            self.proxy_tree.insert(
+                "",
+                "end",
+                iid=proxy["id"],
+                values=(
+                    proxy.get("ip_address"),
+                    proxy.get("port"),
+                    proxy.get("region", ""),
+                    proxy.get("status", "Unknown"),
+                ),
+                tags=(tag,),
+            )
+
+    def add_proxy(self) -> None:
+        entry = self.proxy_entry.get().strip()
+        if not entry or ":" not in entry:
+            return
+        ip, port = entry.split(":", 1)
+        region = self.lookup_region(ip)
+        database.add_proxy(ip, port, region, "Unknown")
+        self.proxy_entry.delete(0, tk.END)
+        self.refresh_proxies()
+
+    def delete_proxy(self) -> None:
+        sel = self.proxy_tree.selection()
+        if not sel:
+            return
+        proxy_id = int(sel[0])
+        database.delete_proxy(proxy_id)
+        self.refresh_proxies()
+
+    def test_selected_proxy(self) -> None:
+        sel = self.proxy_tree.selection()
+        if not sel:
+            return
+        proxy_id = int(sel[0])
+        item = self.proxy_tree.item(sel[0])
+        ip, port = item["values"][0], item["values"][1]
+        status = self.ping_proxy(f"{ip}:{port}")
+        region = self.lookup_region(ip)
+        database.update_proxy(proxy_id, status=status, region=region)
+        self.refresh_proxies()
+
+    def lookup_region(self, ip: str) -> str | None:
+        try:
+            resp = requests.get(f"http://ip-api.com/json/{ip}", timeout=5).json()
+            if resp.get("status") == "success":
+                return resp.get("countryCode")
+        except Exception:
+            return None
+        return None
+
+    def ping_proxy(self, proxy: str) -> str:
+        proxies = {"http": proxy, "https": proxy}
+        try:
+            requests.get("https://www.google.com", proxies=proxies, timeout=5)
+            return "Working"
+        except Exception:
+            return "Down"
 
     # --- SITES --------------------------------------------------------
     def create_sites_tab(self, frame: ttk.Frame) -> None:
@@ -328,77 +500,68 @@ class GuardianDeck(tk.Tk):
 
     # --- SCHEDULER ----------------------------------------------------
     def create_scheduler_tab(self, frame: ttk.Frame) -> None:
-        self.schedule_listbox = tk.Listbox(frame)
-        self.schedule_listbox.pack(side="left", fill="both", expand=True, padx=5, pady=5)
+        columns = ("site", "time", "status", "repeat")
+        self.schedule_tree = ttk.Treeview(frame, columns=columns, show="headings")
+        for col in columns:
+            self.schedule_tree.heading(col, text=col.title())
+        self.schedule_tree.pack(fill="both", expand=True, side="left", padx=5, pady=5)
 
         controls = ttk.Frame(frame)
         controls.pack(side="left", fill="y", padx=5, pady=5)
+        ttk.Button(controls, text="Add Scheduled Job", command=self.add_schedule_job).pack(fill="x", pady=2)
+        ttk.Button(controls, text="Remove Selected", command=self.remove_schedule).pack(fill="x", pady=2)
+        ttk.Button(controls, text="Toggle Scheduler", command=self.toggle_scheduler).pack(fill="x", pady=2)
+        self.scheduler_banner = ttk.Label(controls, text="Scheduler: Stopped", foreground="red")
+        self.scheduler_banner.pack(anchor="w", pady=5)
 
-        form = ttk.Frame(controls)
-        form.pack(fill="x")
-        ttk.Label(form, text="Site:").grid(row=0, column=0, sticky="w")
-        self.site_entry = ttk.Entry(form)
-        self.site_entry.grid(row=0, column=1, sticky="ew")
-        ttk.Label(form, text="Prompt:").grid(row=1, column=0, sticky="nw")
-        self.prompt_entry = ScrolledText(form, width=20, height=4)
-        self.prompt_entry.grid(row=1, column=1, sticky="ew")
-        ttk.Label(form, text="Interval (min):").grid(row=2, column=0, sticky="w")
-        self.interval_var = tk.IntVar(value=60)
-        ttk.Spinbox(form, from_=1, to=1440, textvariable=self.interval_var, width=5).grid(row=2, column=1, sticky="w")
-        form.columnconfigure(1, weight=1)
+        self.refresh_schedule_table()
 
-        btns = ttk.Frame(controls)
-        btns.pack(pady=5)
-        ttk.Button(btns, text="Add", command=self.add_schedule).pack(side="left", padx=5)
-        ttk.Button(btns, text="Remove", command=self.remove_schedule).pack(side="left", padx=5)
-        ttk.Button(btns, text="Start", command=self.start_scheduler).pack(side="left", padx=5)
-        ttk.Button(btns, text="Stop", command=self.stop_scheduler).pack(side="left", padx=5)
-
-        self.scheduler_status = ttk.Label(controls, text="Inactive", foreground="red")
-        self.scheduler_status.pack(anchor="w", pady=5)
-        self.refresh_schedule()
-
-    def refresh_schedule(self) -> None:
-        self.schedule_listbox.delete(0, tk.END)
-        for task in self.scheduler.schedule:
-            self.schedule_listbox.insert(
-                tk.END, f"{task['site']} every {task['interval_minutes']} min"
+    def refresh_schedule_table(self) -> None:
+        for item in getattr(self, "schedule_tree").get_children():
+            self.schedule_tree.delete(item)
+        for idx, task in enumerate(self.scheduler.schedule):
+            repeat = "Y" if task.get("interval_minutes") else "N"
+            self.schedule_tree.insert(
+                "",
+                "end",
+                iid=str(idx),
+                values=(task.get("site"), task.get("next_run"), task.get("status"), repeat),
             )
 
-    def add_schedule(self) -> None:
-        site = self.site_entry.get().strip()
-        prompt = self.prompt_entry.get("1.0", "end").strip()
-        interval = self.interval_var.get()
-        if not site or not prompt:
-            messagebox.showwarning("Schedule", "Site and prompt required.")
+    def add_schedule_job(self) -> None:
+        site = simpledialog.askstring("Scheduled Job", "Site:")
+        if not site:
             return
+        prompt = simpledialog.askstring("Scheduled Job", "Prompt:") or ""
+        interval = simpledialog.askinteger("Scheduled Job", "Interval minutes", minvalue=1, initialvalue=60)
         task = {
             "site": site,
             "prompt": prompt,
             "interval_minutes": interval,
-            "next_run": (datetime.now() + timedelta(minutes=interval)).isoformat(),
+            "next_run": self.scheduler.get_next_run(interval),
+            "status": "Queued",
         }
         self.scheduler.schedule.append(task)
         self.scheduler.save_schedule()
-        self.refresh_schedule()
-        messagebox.showinfo("Schedule", "Task added.")
+        self.refresh_schedule_table()
 
     def remove_schedule(self) -> None:
-        sel = self.schedule_listbox.curselection()
+        sel = self.schedule_tree.selection()
         if not sel:
             return
-        self.scheduler.schedule.pop(sel[0])
-        self.scheduler.save_schedule()
-        self.refresh_schedule()
+        index = int(sel[0])
+        if 0 <= index < len(self.scheduler.schedule):
+            del self.scheduler.schedule[index]
+            self.scheduler.save_schedule()
+            self.refresh_schedule_table()
 
-    def start_scheduler(self) -> None:
-        if not getattr(self.scheduler, "thread", None):
+    def toggle_scheduler(self) -> None:
+        if self.scheduler.running:
+            self.scheduler.stop()
+            self.scheduler_banner.config(text="Scheduler: Stopped", foreground="red")
+        else:
             self.scheduler.start()
-        self.scheduler_status.config(text="Active", foreground="green")
-
-    def stop_scheduler(self) -> None:
-        # ReviewScheduler has no hard stop; flag is informational only
-        self.scheduler_status.config(text="Inactive", foreground="red")
+            self.scheduler_banner.config(text="Scheduler: Running", foreground="green")
 
     # --- JOBS --------------------------------------------------------
     def create_jobs_tab(self, frame: ttk.Frame) -> None:
