@@ -1,0 +1,9 @@
+body { font-family: Arial, sans-serif; margin: 20px; }
+h1 { text-align: center; }
+section { margin-bottom: 30px; }
+#status-table { border-collapse: collapse; width: 100%; }
+#status-table th, #status-table td { border: 1px solid #ccc; padding: 8px; }
+.green { background-color: #c8e6c9; }
+.yellow { background-color: #fff9c4; }
+.red { background-color: #ffcdd2; }
+#logs { max-height: 300px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px; }

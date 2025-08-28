@@ -23,6 +23,18 @@ class ReviewScheduler:
         for task in self.schedule:
             task.setdefault("status", "Queued")
 
+    def add_task(self, prompt: str, site: str | None = None, interval_minutes: int = 60) -> None:
+        """Add a new scheduled review task."""
+        task = {
+            "prompt": prompt,
+            "site": site,
+            "interval_minutes": interval_minutes,
+            "next_run": self.get_next_run(interval_minutes),
+            "status": "Queued",
+        }
+        self.schedule.append(task)
+        self.save_schedule()
+
     def start(self) -> None:
         if self.thread and self.thread.is_alive():
             return
