@@ -52,6 +52,7 @@ class GuardianDeck(tk.Tk):
 
         tabs = {
             "Review Generator": self.create_review_tab,
+            "Review Queue": self.create_queue_tab,
             "Templates": self.create_templates_tab,
             "Accounts": self.create_accounts_tab,
             "Proxies": self.create_proxy_tab,
@@ -351,6 +352,117 @@ class GuardianDeck(tk.Tk):
         messagebox.showinfo(
             "Assign & Queue", f"Queued {len(selected)} review(s) for project '{project}'."
         )
+
+    # --- REVIEW QUEUE ------------------------------------------------
+    def create_queue_tab(self, frame: ttk.Frame) -> None:
+        controls = ttk.Frame(frame)
+        controls.pack(fill="x", padx=10, pady=5)
+        ttk.Label(controls, text="Project:").pack(side="left")
+        self.queue_project_var = tk.StringVar()
+        self.queue_project_box = ttk.Combobox(
+            controls, textvariable=self.queue_project_var, state="readonly", width=20
+        )
+        self.queue_project_box.pack(side="left", padx=5)
+        self.queue_project_box.bind("<<ComboboxSelected>>", self.refresh_queue_view)
+        ttk.Button(controls, text="Edit Selected", command=self.edit_selected_queue_item).pack(
+            side="left", padx=5
+        )
+        ttk.Button(controls, text="Delete Selected", command=self.delete_selected_queue_item).pack(
+            side="left", padx=5
+        )
+        ttk.Button(controls, text="Refresh", command=self.refresh_queue_projects).pack(side="right")
+
+        columns = ("rating", "text")
+        self.queue_tree = ttk.Treeview(frame, columns=columns, show="headings")
+        self.queue_tree.heading("rating", text="Rating")
+        self.queue_tree.heading("text", text="Review")
+        self.queue_tree.column("rating", width=60, anchor="center")
+        self.queue_tree.column("text", anchor="w")
+        self.queue_tree.pack(fill="both", expand=True, padx=10, pady=5)
+
+        self.current_queue_data = []
+        self.refresh_queue_projects()
+
+    def refresh_queue_projects(self) -> None:
+        projects = [p.stem for p in QUEUED_DIR.glob("*.json")] if QUEUED_DIR.exists() else []
+        self.queue_project_box["values"] = projects
+        if projects:
+            if self.queue_project_var.get() not in projects:
+                self.queue_project_var.set(projects[0])
+            self.refresh_queue_view()
+        else:
+            self.queue_project_var.set("")
+            self.refresh_queue_view()
+
+    def load_queue_file(self, project: str) -> list[dict]:
+        path = QUEUED_DIR / f"{project}.json"
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except FileNotFoundError:
+            return []
+
+    def save_queue_file(self, project: str, data: list[dict]) -> None:
+        QUEUED_DIR.mkdir(parents=True, exist_ok=True)
+        path = QUEUED_DIR / f"{project}.json"
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+
+    def refresh_queue_view(self, event=None) -> None:
+        for item in self.queue_tree.get_children():
+            self.queue_tree.delete(item)
+        project = self.queue_project_var.get()
+        if not project:
+            self.current_queue_data = []
+            return
+        data = self.load_queue_file(project)
+        self.current_queue_data = data
+        for idx, item in enumerate(data):
+            self.queue_tree.insert(
+                "",
+                "end",
+                iid=str(idx),
+                values=(item.get("rating", ""), item.get("text", "")),
+            )
+
+    def edit_selected_queue_item(self) -> None:
+        sel = self.queue_tree.selection()
+        if not sel:
+            messagebox.showinfo("Edit", "No review selected.")
+            return
+        idx = int(sel[0])
+        item = self.current_queue_data[idx]
+        dialog = tk.Toplevel(self)
+        dialog.title("Edit Review")
+        ttk.Label(dialog, text="Text:").pack(anchor="w", padx=10, pady=(10, 0))
+        text_box = ScrolledText(dialog, height=6, width=60)
+        text_box.pack(padx=10, pady=5)
+        text_box.insert("1.0", item.get("text", ""))
+        ttk.Label(dialog, text="Rating:").pack(anchor="w", padx=10)
+        rating_var = tk.IntVar(value=item.get("rating", 1))
+        ttk.Spinbox(dialog, from_=1, to=5, textvariable=rating_var, width=5).pack(
+            anchor="w", padx=10, pady=(0, 10)
+        )
+
+        def save() -> None:
+            item["text"] = text_box.get("1.0", "end").strip()
+            item["rating"] = rating_var.get()
+            self.save_queue_file(self.queue_project_var.get(), self.current_queue_data)
+            dialog.destroy()
+            self.refresh_queue_view()
+
+        ttk.Button(dialog, text="Save", command=save).pack(pady=5)
+
+    def delete_selected_queue_item(self) -> None:
+        sel = self.queue_tree.selection()
+        if not sel:
+            messagebox.showinfo("Delete", "No review selected.")
+            return
+        for item_id in sorted(sel, key=int, reverse=True):
+            idx = int(item_id)
+            del self.current_queue_data[idx]
+        self.save_queue_file(self.queue_project_var.get(), self.current_queue_data)
+        self.refresh_queue_view()
 
     # --- TEMPLATES ----------------------------------------------------
     def create_templates_tab(self, frame: ttk.Frame) -> None:
