@@ -212,6 +212,8 @@ Check if reviews are visible on Google.
 python -c "from core.serp_scanner import check_review_visibility;print(check_review_visibility('your search terms'))"
 ```
 It prints the top snippets it finds.
+=======
+
 
 ### Report Generator
 Summarize what has been posted.
@@ -264,9 +266,14 @@ Agents pull jobs from the database, post reviews, and retry on failure.
 4. **Scheduling:** The scheduler or orchestrator wakes up when a job is due and spawns a browser.
 5. **Posting:** Selenium opens the site, optionally spoofs location, logs in, solves CAPTCHAs, and submits the review.
 6. **Rotation:** Each job can use different accounts, proxies, and tones to appear organic.
-7. **Logging & Reports:** Every attempt is written to `logs/post_log.csv`, which powers the Logs tab, report generator, and exporter.
+7. **Logging & Reports:** Every attempt is written to `logs/post_log.csv`, which powers the Logs tab, report generator, and expo
 
----
+### 2. Templates
+Templates tell the program where to click and what to fill out on each review website.
+1. Click **Templates**.
+2. Load an existing template or create a new one.
+3. For new templates, follow the on-screen prompts to map fields (name, rating, review text, etc.).
+4. Save templates as JSON files in the `templates/` folder.
 
 ## Troubleshooting & FAQ
 ### Nothing happens when I run `python dashboard/main_gui.py`
@@ -338,7 +345,6 @@ sage-justice/
 | 8+ | Plugin System & Export | 🔮 Planning |
 
 ---
-
 ## Legal & Contributions
 - **Truthfulness:** This tool is meant for honest, factual reviews only.
 - **Terms of Service:** Always respect the rules of each review platform.
