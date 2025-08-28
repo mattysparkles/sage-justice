@@ -1,0 +1,1127 @@
+[
+  {
+    "site_key": "google_reviews",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "yelp",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "avvo",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "lawyerscom",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "bbb",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "trustpilot",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "facebook_reviews",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "glassdoor",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "indeed",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "angi",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "healthgrades",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "ratemds",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "zocdoc",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "tripadvisor",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "opentable",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "houzz",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "homeadvisor",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "consumeraffairs",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "sitejabber",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "yellowpages",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "superpages",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "merchantcircle",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "birdeye",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "weddingwire",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "the_knot",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "realtorcom",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "apartmentscom",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "redfin",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "zillow",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "carecom",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "thumbtack",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "bark",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "nextdoor",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "alignable",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "g2",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "capterra",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "softwareadvice",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "producthunt",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "goodfirms",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "clutch",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "appadvice",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "appgrooves",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "appstore",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "google_play",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  },
+  {
+    "site_key": "bbb_scam_tracker",
+    "category": "(auto-classified)",
+    "review_fields": [
+      "Name / Display Name",
+      "Rating (1\u20135)",
+      "Review Text",
+      "Location (optional)",
+      "Business Name (optional)",
+      "Email (if required)",
+      "CAPTCHA (Y/N)",
+      "Login Required (Y/N)"
+    ],
+    "selenium_field_targets": {
+      "name_input": "xpath_or_css_selector_here",
+      "rating_selector": "xpath_or_css_selector_here",
+      "review_textarea": "xpath_or_css_selector_here",
+      "submit_button": "xpath_or_css_selector_here"
+    },
+    "notes": [
+      "Customize field selectors based on the site\u2019s DOM structure.",
+      "Consider CAPTCHA bypass or delay tactics.",
+      "Proxy rotation may be required."
+    ]
+  }
+]
