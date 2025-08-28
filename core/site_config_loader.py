@@ -2,13 +2,19 @@
 import json
 from pathlib import Path
 
+from .template_registry import register_site_templates
+
 class SiteConfigLoader:
-    def __init__(self, templates_path="templates"):
+    def __init__(self, templates_path="templates", config_path="config/templates.json"):
         self.templates_path = Path(templates_path)
+        self.config_path = Path(config_path)
         self.site_templates = {}
 
     def load_templates(self):
-        for template_file in self.templates_path.glob("*.json"):
+        # Ensure templates are registered before loading
+        register_site_templates(self.templates_path / "sites", self.config_path)
+
+        for template_file in self.templates_path.rglob("*.json"):
             with open(template_file, "r", encoding="utf-8") as f:
                 try:
                     data = json.load(f)

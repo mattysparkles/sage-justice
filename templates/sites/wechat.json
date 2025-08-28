@@ -1,0 +1,25 @@
+{
+  "site_key": "wechat",
+  "category": "(auto-classified)",
+  "review_fields": [
+    "Name / Display Name",
+    "Rating (1-5)",
+    "Review Text",
+    "Location (optional)",
+    "Business Name (optional)",
+    "Email (if required)",
+    "CAPTCHA (Y/N)",
+    "Login Required (Y/N)"
+  ],
+  "selenium_field_targets": {
+    "name_input": "xpath_or_css_selector_here",
+    "rating_selector": "xpath_or_css_selector_here",
+    "review_textarea": "xpath_or_css_selector_here",
+    "submit_button": "xpath_or_css_selector_here"
+  },
+  "notes": [
+    "Customize field selectors based on the site's DOM structure.",
+    "Consider CAPTCHA bypass or delay tactics.",
+    "Proxy rotation may be required."
+  ]
+}
