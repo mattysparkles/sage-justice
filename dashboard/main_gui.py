@@ -25,11 +25,11 @@ from core.serp_scanner import check_review_visibility
 from core.captcha_solver import solve_captcha
 from core.geospoofer import get_random_location
 from core.async_queue import AsyncReviewQueue
+from core.log_manager import LogManager
 
 SETTINGS_PATH = Path("config/settings.local.json")
 DEFAULT_SETTINGS_PATH = Path("config/settings.json")
-LOG_PATH = Path("logs/app.log")
-POST_LOG_PATH = Path("logs/post_log.csv")
+LOG_SETTINGS_PATH = Path("config/log_settings.json")
 ACCOUNTS_PATH = Path("accounts/accounts.json")
 TEMPLATES_DIR = Path("templates")
 TEMPLATES_PATH = Path("config/templates.json")
@@ -45,6 +45,12 @@ class GuardianDeck(tk.Tk):
         self.job_manager = JobQueueManager()
         self.async_queue = AsyncReviewQueue()
         self.async_queue.start()
+        log_cfg = load_json_config(LOG_SETTINGS_PATH) if LOG_SETTINGS_PATH.exists() else {}
+        max_per = log_cfg.get("max_size_per_project", 1024 * 1024)
+        max_all = log_cfg.get("max_size_overall", 10 * 1024 * 1024)
+        self.log_manager = LogManager(
+            max_size_per_project=max_per, max_size_overall=max_all
+        )
         self.create_widgets()
 
     # --- UI SETUP -----------------------------------------------------
@@ -295,6 +301,14 @@ class GuardianDeck(tk.Tk):
             self.project_var.set(projects[0])
         else:
             self.project_var.set("")
+        self.refresh_log_projects()
+
+    def refresh_log_projects(self) -> None:
+        if hasattr(self, "log_project_box"):
+            projects = ["All"] + self.load_projects_list()
+            self.log_project_box["values"] = projects
+            if self.log_project_var.get() not in projects:
+                self.log_project_var.set(projects[0] if projects else "All")
 
     def handle_project_selection(self, event=None) -> None:
         if self.project_var.get() == "Create New Project...":
@@ -1116,6 +1130,16 @@ class GuardianDeck(tk.Tk):
 
     # --- LOGS ---------------------------------------------------------
     def create_logs_tab(self, frame: ttk.Frame) -> None:
+        controls = ttk.Frame(frame)
+        controls.pack(fill="x", padx=10, pady=5)
+        ttk.Label(controls, text="Project:").pack(side="left")
+        self.log_project_var = tk.StringVar(value="All")
+        self.log_project_box = ttk.Combobox(
+            controls, textvariable=self.log_project_var, state="readonly", width=25
+        )
+        self.log_project_box.pack(side="left", padx=5)
+        self.log_project_box.bind("<<ComboboxSelected>>", lambda _: self.load_logs())
+        self.refresh_log_projects()
         self.log_output = ScrolledText(frame, height=20)
         self.log_output.pack(fill="both", expand=True, padx=10, pady=5)
         ttk.Button(frame, text="Refresh", command=self.load_logs).pack(pady=5)
@@ -1123,12 +1147,23 @@ class GuardianDeck(tk.Tk):
 
     def load_logs(self) -> None:
         self.log_output.delete("1.0", "end")
-        path = POST_LOG_PATH if POST_LOG_PATH.exists() else LOG_PATH
-        if path.exists():
-            lines = path.read_text(encoding="utf-8").splitlines()[-100:]
-            self.log_output.insert("end", "\n".join(lines))
+        self.log_manager._enforce_limits()
+        project = getattr(self, "log_project_var", None)
+        project_name = project.get() if project else "All"
+        if project_name == "All":
+            logs = self.log_manager.get_logs()
+            if logs:
+                for name, lines in logs.items():
+                    self.log_output.insert("end", f"=== {name} ===\n")
+                    self.log_output.insert("end", "\n".join(lines[-100:]) + "\n\n")
+            else:
+                self.log_output.insert("end", "No logs found.")
         else:
-            self.log_output.insert("end", "Log file not found.")
+            lines = self.log_manager.get_logs(project_name)
+            if lines:
+                self.log_output.insert("end", "\n".join(lines[-100:]))
+            else:
+                self.log_output.insert("end", "Log file not found.")
 
     # --- TOOLS --------------------------------------------------------
     def create_tools_tab(self, frame: ttk.Frame) -> None:
