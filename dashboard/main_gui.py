@@ -14,8 +14,8 @@ import requests
 
 from core import database
 from core.config_loader import load_json_config
-from core.review_generator import generate_reviews
 from core.review_spinner import generate_variants
+from core import project_hub
 from core.site_config_loader import SiteConfigLoader
 from scheduler.schedule_engine import ReviewScheduler
 from gui.template_manager_gui import TemplateManagerFrame
@@ -28,7 +28,6 @@ POST_LOG_PATH = Path("logs/post_log.csv")
 ACCOUNTS_PATH = Path("accounts/accounts.json")
 TEMPLATES_DIR = Path("templates")
 TEMPLATES_PATH = Path("config/templates.json")
-PROJECTS_PATH = Path("config/project.json")
 QUEUED_DIR = Path("output/queued_reviews")
 
 
@@ -113,7 +112,7 @@ class GuardianDeck(tk.Tk):
 
     # --- REVIEW GENERATOR --------------------------------------------
     def create_review_tab(self, frame: ttk.Frame) -> None:
-        ttk.Label(frame, text="Prompt:").pack(anchor="w")
+        ttk.Label(frame, text="Tell us about your experience").pack(anchor="w")
         self.prompt_text = ScrolledText(frame, height=4)
         self.prompt_text.pack(fill="x", padx=10, pady=5)
 
@@ -122,8 +121,6 @@ class GuardianDeck(tk.Tk):
         ttk.Label(options, text="Count:").pack(side="left")
         self.count_var = tk.IntVar(value=1)
         ttk.Spinbox(options, from_=1, to=10, textvariable=self.count_var, width=5).pack(side="left", padx=5)
-        self.rewrite_var = tk.BooleanVar()
-        ttk.Checkbutton(options, text="Rewrite", variable=self.rewrite_var).pack(side="left", padx=5)
         ttk.Button(options, text="Generate", command=self.run_generation).pack(side="left", padx=5)
         ttk.Label(options, text="Template:").pack(side="left", padx=(10, 0))
         self.template_var = tk.StringVar()
@@ -138,15 +135,12 @@ class GuardianDeck(tk.Tk):
         self.refresh_projects()
         ttk.Button(options, text="Assign & Queue", command=self.assign_and_queue).pack(side="left", padx=5)
 
-        tone_frame = ttk.Frame(frame)
-        tone_frame.pack(fill="x", padx=10, pady=5)
-        ttk.Label(tone_frame, text="Formality").grid(row=0, column=0, sticky="w")
-        self.formality_var = tk.IntVar(value=5)
-        ttk.Scale(tone_frame, from_=0, to=10, orient="horizontal", variable=self.formality_var).grid(row=0, column=1, sticky="ew")
-        ttk.Label(tone_frame, text="Emotion").grid(row=1, column=0, sticky="w")
-        self.emotion_var = tk.IntVar(value=5)
-        ttk.Scale(tone_frame, from_=0, to=10, orient="horizontal", variable=self.emotion_var).grid(row=1, column=1, sticky="ew")
-        tone_frame.columnconfigure(1, weight=1)
+        style_frame = ttk.Frame(frame)
+        style_frame.pack(fill="x", padx=10, pady=5)
+        ttk.Label(style_frame, text="Tone:").pack(side="left")
+        self.tone_var = tk.StringVar(value="professional")
+        for tone in ["professional", "rhetorical", "outraged", "legalese"]:
+            ttk.Radiobutton(style_frame, text=tone.title(), value=tone, variable=self.tone_var).pack(side="left", padx=2)
 
         rating_frame = ttk.Frame(frame)
         rating_frame.pack(fill="x", padx=10, pady=5)
@@ -199,30 +193,13 @@ class GuardianDeck(tk.Tk):
             return
         if tmpl:
             reviews = [self.generate_preview_from_template(tmpl) for _ in range(count)]
-            if self.rewrite_var.get():
-                spun = []
-                for review in reviews:
-                    variants = generate_variants(review, n=1)
-                    spun.append(variants[0] if variants else review)
-                reviews = spun
         else:
             prompt = self.prompt_text.get("1.0", "end").strip()
             if not prompt:
-                messagebox.showwarning("Input", "Please provide a prompt.")
+                messagebox.showwarning("Input", "Please provide your experience.")
                 return
             try:
-                reviews = generate_reviews(
-                    prompt,
-                    count=count,
-                    formality=self.formality_var.get(),
-                    emotion=self.emotion_var.get(),
-                )
-                if self.rewrite_var.get():
-                    spun = []
-                    for review in reviews:
-                        variants = generate_variants(review, n=1)
-                        spun.append(variants[0] if variants else review)
-                    reviews = spun
+                reviews = generate_variants(prompt, n=count, tone=self.tone_var.get())
             except Exception as e:
                 messagebox.showerror("OpenAI", f"Failed to generate reviews: {e}")
                 return
@@ -295,17 +272,11 @@ class GuardianDeck(tk.Tk):
             self.template_var.set("")
 
     def load_projects_list(self) -> list[str]:
-        try:
-            data = load_json_config(PROJECTS_PATH)
-            if isinstance(data, list):
-                return data
-            return data.get("projects", [])
-        except FileNotFoundError:
-            return []
+        return project_hub.list_projects()
 
     def save_projects_list(self, projects: list[str]) -> None:
-        with open(PROJECTS_PATH, "w", encoding="utf-8") as f:
-            json.dump(projects, f, indent=2)
+        # Project persistence handled by project_hub
+        pass
 
     def refresh_projects(self) -> None:
         projects = self.load_projects_list()
@@ -320,10 +291,7 @@ class GuardianDeck(tk.Tk):
         if self.project_var.get() == "Create New Project...":
             name = simpledialog.askstring("New Project", "Project name:")
             if name:
-                projects = self.load_projects_list()
-                if name not in projects:
-                    projects.append(name)
-                    self.save_projects_list(projects)
+                project_hub.add_project(name)
                 self.refresh_projects()
                 self.project_var.set(name)
             else:
@@ -338,25 +306,31 @@ class GuardianDeck(tk.Tk):
         if not selected:
             messagebox.showinfo("Assign & Queue", "No reviews selected.")
             return
+        if project_hub.get_status(project) != "active":
+            messagebox.showwarning("Project", f"Project '{project}' is not active.")
+            return
         QUEUED_DIR.mkdir(parents=True, exist_ok=True)
         file_path = QUEUED_DIR / f"{project}.json"
         try:
             existing = json.load(open(file_path, "r", encoding="utf-8"))
         except FileNotFoundError:
             existing = []
+        added = 0
         for item in selected:
-            existing.append({
+            record = {
                 "text": item["text"],
                 "rating": item["rating"],
                 "timestamp": datetime.utcnow().isoformat(),
                 "project": project,
-            })
+            }
+            if project_hub.add_resource(project, "reviews", record):
+                existing.append(record)
+                added += 1
         with open(file_path, "w", encoding="utf-8") as f:
             json.dump(existing, f, indent=2)
         messagebox.showinfo(
-            "Assign & Queue", f"Queued {len(selected)} review(s) for project '{project}'."
+            "Assign & Queue", f"Queued {added} review(s) for project '{project}'."
         )
-
     # --- PROJECTS ----------------------------------------------------
     def create_projects_tab(self, frame: ttk.Frame) -> None:
         list_frame = ttk.Frame(frame)
@@ -439,8 +413,7 @@ class GuardianDeck(tk.Tk):
         if name in projects:
             messagebox.showinfo("Project", "Project already exists.")
             return
-        projects.append(name)
-        self.save_projects_list(projects)
+        project_hub.add_project(name)
         self.refresh_projects_tab()
         self.refresh_projects()
         self.refresh_queue_projects()
@@ -459,8 +432,7 @@ class GuardianDeck(tk.Tk):
         if new_name in projects:
             messagebox.showinfo("Rename", "Project with that name already exists.")
             return
-        projects[index] = new_name
-        self.save_projects_list(projects)
+        project_hub.rename_project(old_name, new_name)
         old_file = QUEUED_DIR / f"{old_name}.json"
         new_file = QUEUED_DIR / f"{new_name}.json"
         if old_file.exists():
@@ -476,17 +448,15 @@ class GuardianDeck(tk.Tk):
             return
         index = sel[0]
         projects = self.load_projects_list()
-        name = projects.pop(index)
+        name = projects[index]
         if messagebox.askyesno("Delete", f"Delete project '{name}'?"):
-            self.save_projects_list(projects)
+            project_hub.delete_project(name)
             file_path = QUEUED_DIR / f"{name}.json"
             if file_path.exists():
                 file_path.unlink()
             self.refresh_projects_tab()
             self.refresh_projects()
             self.refresh_queue_projects()
-        else:
-            projects.insert(index, name)
 
     def refresh_project_accounts(self) -> None:
         self.project_accounts_list.delete(0, "end")

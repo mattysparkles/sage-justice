@@ -11,6 +11,18 @@
     "assigned_proxies": ["proxy-03", "proxy-07"],
     "scheduled_tasks": [],
     "template_overrides": {},
-    "last_run": null
+    "last_run": null,
+    "resources": {
+      "reviews": [],
+      "templates": [],
+      "schedule": {},
+      "accounts": [],
+      "proxies": []
+    },
+    "constraints": {
+      "reviews": 100,
+      "templates": 10
+    },
+    "status": "active"
   }
 ]
