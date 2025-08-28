@@ -68,7 +68,8 @@ def init_db() -> None:
             password TEXT,
             category TEXT,
             health_status TEXT,
-            last_used TIMESTAMP
+            last_used TIMESTAMP,
+            metadata TEXT
         )
         """
     )
@@ -111,6 +112,11 @@ def init_db() -> None:
         pass
     try:
         cur.execute("ALTER TABLE proxies ADD COLUMN password TEXT")
+    except sqlite3.OperationalError:
+        pass
+    # Add metadata column for accounts in older databases
+    try:
+        cur.execute("ALTER TABLE accounts ADD COLUMN metadata TEXT")
     except sqlite3.OperationalError:
         pass
     cur.execute(
@@ -199,14 +205,15 @@ def _import_accounts(data: Any) -> None:
     for acc in data:
         cur.execute(
             """
-            INSERT INTO accounts (username, password, category, health_status)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO accounts (username, password, category, health_status, metadata)
+            VALUES (?, ?, ?, ?, ?)
             """,
             (
                 acc.get("username"),
                 acc.get("password"),
                 acc.get("platform") or acc.get("category"),
                 "healthy",
+                json.dumps(acc.get("metadata")) if acc.get("metadata") else None,
             ),
         )
     conn.commit()
@@ -254,7 +261,18 @@ def get_available_account() -> Optional[Dict[str, Any]]:
         cur.execute("UPDATE accounts SET last_used = CURRENT_TIMESTAMP WHERE id=?", (row["id"],))
         conn.commit()
     conn.close()
-    return dict(row) if row else None
+    if not row:
+        return None
+    account = dict(row)
+    meta = account.get("metadata")
+    if meta:
+        try:
+            account["metadata"] = json.loads(meta)
+        except json.JSONDecodeError:
+            account["metadata"] = {}
+    else:
+        account["metadata"] = {}
+    return account
 
 
 def mark_account_failed(account_id: int) -> None:
@@ -373,7 +391,19 @@ def get_all_accounts() -> list[Dict[str, Any]]:
     conn = get_connection()
     rows = conn.execute("SELECT * FROM accounts").fetchall()
     conn.close()
-    return [dict(r) for r in rows]
+    results = []
+    for r in rows:
+        d = dict(r)
+        meta = d.get("metadata")
+        if meta:
+            try:
+                d["metadata"] = json.loads(meta)
+            except json.JSONDecodeError:
+                d["metadata"] = {}
+        else:
+            d["metadata"] = {}
+        results.append(d)
+    return results
 
 
 def get_account_projects(account_id: int) -> list[str]:
@@ -488,12 +518,18 @@ def get_proxies_for_project(project: str) -> list[Dict[str, Any]]:
 # Additional helpers for management GUIs
 
 
-def add_account(username: str, password: str, category: str, health_status: str = "healthy") -> None:
+def add_account(
+    username: str,
+    password: str,
+    category: str,
+    health_status: str = "healthy",
+    metadata: Optional[Dict[str, Any]] = None,
+) -> None:
     """Insert a new account into the database."""
     conn = get_connection()
     conn.execute(
-        "INSERT INTO accounts (username, password, category, health_status) VALUES (?, ?, ?, ?)",
-        (username, password, category, health_status),
+        "INSERT INTO accounts (username, password, category, health_status, metadata) VALUES (?, ?, ?, ?, ?)",
+        (username, password, category, health_status, json.dumps(metadata) if metadata else None),
     )
     conn.commit()
     conn.close()
