@@ -498,7 +498,12 @@ class GuardianDeck(tk.Tk):
         text = ScrolledText(frame)
         text.pack(fill="both", expand=True, padx=10, pady=5)
         for name, conf in sites.items():
-            text.insert("end", f"{name}: {list(conf.get('fields', {}).keys())}\n")
+            fields = conf.get("fields") or conf.get("review_fields", [])
+            if isinstance(fields, dict):
+                field_names = list(fields.keys())
+            else:
+                field_names = list(fields)
+            text.insert("end", f"{name}: {field_names}\n")
         text.config(state="disabled")
 
     # --- SCHEDULER ----------------------------------------------------
