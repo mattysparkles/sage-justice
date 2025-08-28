@@ -53,6 +53,7 @@ class GuardianDeck(tk.Tk):
         tabs = {
             "Review Generator": self.create_review_tab,
             "Review Queue": self.create_queue_tab,
+            "Projects": self.create_projects_tab,
             "Templates": self.create_templates_tab,
             "Accounts": self.create_accounts_tab,
             "Proxies": self.create_proxy_tab,
@@ -302,6 +303,10 @@ class GuardianDeck(tk.Tk):
         except FileNotFoundError:
             return []
 
+    def save_projects_list(self, projects: list[str]) -> None:
+        with open(PROJECTS_PATH, "w", encoding="utf-8") as f:
+            json.dump(projects, f, indent=2)
+
     def refresh_projects(self) -> None:
         projects = self.load_projects_list()
         values = projects + ["Create New Project..."]
@@ -318,8 +323,7 @@ class GuardianDeck(tk.Tk):
                 projects = self.load_projects_list()
                 if name not in projects:
                     projects.append(name)
-                    with open(PROJECTS_PATH, "w", encoding="utf-8") as f:
-                        json.dump(projects, f, indent=2)
+                    self.save_projects_list(projects)
                 self.refresh_projects()
                 self.project_var.set(name)
             else:
@@ -352,6 +356,86 @@ class GuardianDeck(tk.Tk):
         messagebox.showinfo(
             "Assign & Queue", f"Queued {len(selected)} review(s) for project '{project}'."
         )
+
+    # --- PROJECTS ----------------------------------------------------
+    def create_projects_tab(self, frame: ttk.Frame) -> None:
+        list_frame = ttk.Frame(frame)
+        list_frame.pack(fill="both", expand=True, padx=10, pady=5)
+        self.project_listbox = tk.Listbox(list_frame)
+        self.project_listbox.pack(side="left", fill="both", expand=True)
+        scrollbar = ttk.Scrollbar(list_frame, orient="vertical", command=self.project_listbox.yview)
+        scrollbar.pack(side="right", fill="y")
+        self.project_listbox.configure(yscrollcommand=scrollbar.set)
+
+        btns = ttk.Frame(frame)
+        btns.pack(pady=5)
+        ttk.Button(btns, text="Add", command=self.add_project).pack(side="left", padx=5)
+        ttk.Button(btns, text="Rename", command=self.rename_project).pack(side="left", padx=5)
+        ttk.Button(btns, text="Delete", command=self.delete_project).pack(side="left", padx=5)
+
+        self.refresh_projects_tab()
+
+    def refresh_projects_tab(self) -> None:
+        self.project_listbox.delete(0, "end")
+        for name in self.load_projects_list():
+            self.project_listbox.insert("end", name)
+
+    def add_project(self) -> None:
+        name = simpledialog.askstring("Add Project", "Project name:")
+        if not name:
+            return
+        projects = self.load_projects_list()
+        if name in projects:
+            messagebox.showinfo("Project", "Project already exists.")
+            return
+        projects.append(name)
+        self.save_projects_list(projects)
+        self.refresh_projects_tab()
+        self.refresh_projects()
+        self.refresh_queue_projects()
+
+    def rename_project(self) -> None:
+        sel = self.project_listbox.curselection()
+        if not sel:
+            messagebox.showinfo("Rename", "No project selected.")
+            return
+        index = sel[0]
+        projects = self.load_projects_list()
+        old_name = projects[index]
+        new_name = simpledialog.askstring("Rename Project", "New name:", initialvalue=old_name)
+        if not new_name or new_name == old_name:
+            return
+        if new_name in projects:
+            messagebox.showinfo("Rename", "Project with that name already exists.")
+            return
+        projects[index] = new_name
+        self.save_projects_list(projects)
+        old_file = QUEUED_DIR / f"{old_name}.json"
+        new_file = QUEUED_DIR / f"{new_name}.json"
+        if old_file.exists():
+            old_file.rename(new_file)
+        self.refresh_projects_tab()
+        self.refresh_projects()
+        self.refresh_queue_projects()
+
+    def delete_project(self) -> None:
+        sel = self.project_listbox.curselection()
+        if not sel:
+            messagebox.showinfo("Delete", "No project selected.")
+            return
+        index = sel[0]
+        projects = self.load_projects_list()
+        name = projects.pop(index)
+        if messagebox.askyesno("Delete", f"Delete project '{name}'?"):
+            self.save_projects_list(projects)
+            file_path = QUEUED_DIR / f"{name}.json"
+            if file_path.exists():
+                file_path.unlink()
+            self.refresh_projects_tab()
+            self.refresh_projects()
+            self.refresh_queue_projects()
+        else:
+            projects.insert(index, name)
 
     # --- REVIEW QUEUE ------------------------------------------------
     def create_queue_tab(self, frame: ttk.Frame) -> None:
