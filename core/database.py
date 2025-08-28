@@ -490,33 +490,21 @@ def get_proxy_projects(proxy_id: int) -> list[str]:
     """Return list of project names associated with a proxy."""
     conn = get_connection()
     rows = conn.execute(
-        "SELECT project FROM proxy_projects WHERE proxy_id=?",
+        "SELECT target FROM proxy_assignments WHERE proxy_id=? AND level='project'",
         (proxy_id,),
     ).fetchall()
     conn.close()
-    return [r["project"] for r in rows]
+    return [r["target"] for r in rows if r["target"] is not None]
 
 
 def assign_proxy_to_project(proxy_id: int, project: str) -> None:
     """Associate a proxy with a project."""
-    conn = get_connection()
-    conn.execute(
-        "INSERT OR IGNORE INTO proxy_projects (proxy_id, project) VALUES (?, ?)",
-        (proxy_id, project),
-    )
-    conn.commit()
-    conn.close()
+    assign_proxy(proxy_id, "project", project)
 
 
 def remove_proxy_from_project(proxy_id: int, project: str) -> None:
     """Remove a proxy's association with a project."""
-    conn = get_connection()
-    conn.execute(
-        "DELETE FROM proxy_projects WHERE proxy_id=? AND project=?",
-        (proxy_id, project),
-    )
-    conn.commit()
-    conn.close()
+    remove_proxy_assignment(proxy_id, "project", project)
 
 
 def get_proxies_for_project(project: str) -> list[Dict[str, Any]]:
@@ -525,13 +513,66 @@ def get_proxies_for_project(project: str) -> list[Dict[str, Any]]:
     rows = conn.execute(
         """
         SELECT p.* FROM proxies p
-        JOIN proxy_projects pp ON p.id = pp.proxy_id
-        WHERE pp.project=?
+        JOIN proxy_assignments pa ON p.id = pa.proxy_id
+        WHERE pa.level='project' AND pa.target=?
         """,
         (project,),
     ).fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+
+def get_proxy_accounts(proxy_id: int) -> list[Dict[str, Any]]:
+    """Return account records linked to the given proxy."""
+    conn = get_connection()
+    rows = conn.execute(
+        """
+        SELECT a.* FROM proxy_assignments pa
+        JOIN accounts a ON a.id = CAST(pa.target AS INTEGER)
+        WHERE pa.proxy_id=? AND pa.level='account'
+        """,
+        (proxy_id,),
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def get_proxy_sites(proxy_id: int) -> list[str]:
+    """Return site names linked to the given proxy."""
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT target FROM proxy_assignments WHERE proxy_id=? AND level='site'",
+        (proxy_id,),
+    ).fetchall()
+    conn.close()
+    return [r["target"] for r in rows if r["target"] is not None]
+
+
+def assign_proxy_to_account(proxy_id: int, account_id: int) -> None:
+    """Associate a proxy with an account."""
+    assign_proxy(proxy_id, "account", account_id)
+
+
+def remove_proxy_from_account(proxy_id: int, account_id: int) -> None:
+    """Remove a proxy's association with an account."""
+    remove_proxy_assignment(proxy_id, "account", account_id)
+
+
+def assign_proxy_to_site(proxy_id: int, site: str) -> None:
+    """Associate a proxy with a site."""
+    assign_proxy(proxy_id, "site", site)
+
+
+def remove_proxy_from_site(proxy_id: int, site: str) -> None:
+    """Remove a proxy's association with a site."""
+    remove_proxy_assignment(proxy_id, "site", site)
+
+
+def get_all_sites() -> list[str]:
+    conn = get_connection()
+    rows = conn.execute("SELECT name FROM sites").fetchall()
+    conn.close()
+    return [r["name"] for r in rows]
 
 
 def assign_proxy(
@@ -642,9 +683,13 @@ def get_all_proxies() -> list[Dict[str, Any]]:
     conn = get_connection()
     rows = conn.execute(
         """
-        SELECT p.*, GROUP_CONCAT(pp.project, ',') AS projects
+        SELECT p.*,
+            GROUP_CONCAT(CASE WHEN pa.level='project' THEN pa.target END, ',') AS projects,
+            GROUP_CONCAT(CASE WHEN pa.level='site' THEN pa.target END, ',') AS sites,
+            GROUP_CONCAT(CASE WHEN pa.level='account' THEN a.username END, ',') AS accounts
         FROM proxies p
-        LEFT JOIN proxy_projects pp ON p.id = pp.proxy_id
+        LEFT JOIN proxy_assignments pa ON p.id = pa.proxy_id
+        LEFT JOIN accounts a ON pa.level='account' AND pa.target = CAST(a.id AS TEXT)
         GROUP BY p.id
         """
     ).fetchall()
@@ -773,6 +818,13 @@ __all__ = [
     "assign_proxy_to_project",
     "remove_proxy_from_project",
     "get_proxies_for_project",
+    "get_proxy_accounts",
+    "assign_proxy_to_account",
+    "remove_proxy_from_account",
+    "get_proxy_sites",
+    "assign_proxy_to_site",
+    "remove_proxy_from_site",
+    "get_all_sites",
     "log_review",
     "get_all_accounts",
     "get_account_projects",
