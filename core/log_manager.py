@@ -1,4 +1,5 @@
 import os
+import re
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -57,3 +58,39 @@ class LogManager:
         if path.exists():
             return path.read_text(encoding="utf-8").splitlines()
         return []
+
+
+_default_manager: LogManager | None = None
+
+
+def _get_default_manager() -> LogManager:
+    """Return a lazily initialised global LogManager instance."""
+
+    global _default_manager
+    if _default_manager is None:
+        _default_manager = LogManager()
+    return _default_manager
+
+
+def log_post(site: str, review_text: str, success: bool, error: str | None = None) -> None:
+    """Backward compatible helper used by older modules to log review posts.
+
+    Parameters
+    ----------
+    site: str
+        Identifier of the target site or template path.
+    review_text: str
+        Review content that was attempted to be posted.
+    success: bool
+        Whether the post succeeded.
+    error: str | None
+        Optional error message when the post fails.
+    """
+
+    mgr = _get_default_manager()
+    safe_site = re.sub(r"[^A-Za-z0-9_-]+", "_", site)
+    status = "SUCCESS" if success else "FAILURE"
+    msg = f"{status}: {review_text}"
+    if error:
+        msg += f" | {error}"
+    mgr.add(safe_site, msg)
