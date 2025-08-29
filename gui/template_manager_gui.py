@@ -174,12 +174,16 @@ class TemplateManagerFrame(ttk.Frame):
         for item in self.tree.get_children():
             self.tree.delete(item)
         for tmpl in self.templates:
+            tid = tmpl.get("id")
+            if not tid:
+                # Skip entries that don't conform to the review template schema
+                continue
             if flt and flt not in tmpl.get("name", "").lower():
                 continue
             self.tree.insert(
                 "",
                 "end",
-                iid=tmpl["id"],
+                iid=tid,
                 values=(tmpl.get("name", ""), tmpl.get("category", ""), len(tmpl.get("review_blocks", []))),
             )
 
@@ -194,7 +198,7 @@ class TemplateManagerFrame(ttk.Frame):
         sel = self.tree.selection()
         if not sel:
             return
-        tmpl = next((t for t in self.templates if t["id"] == sel[0]), None)
+        tmpl = next((t for t in self.templates if t.get("id") == sel[0]), None)
         if not tmpl:
             return
         self.current_template = tmpl
@@ -221,7 +225,7 @@ class TemplateManagerFrame(ttk.Frame):
         sel = self.tree.selection()
         if not sel:
             return
-        tmpl = next((t for t in self.templates if t["id"] == sel[0]), None)
+        tmpl = next((t for t in self.templates if t.get("id") == sel[0]), None)
         if not tmpl:
             return
         new_tmpl = json.loads(json.dumps(tmpl))
@@ -235,7 +239,7 @@ class TemplateManagerFrame(ttk.Frame):
         sel = self.tree.selection()
         if not sel:
             return
-        self.templates = [t for t in self.templates if t["id"] != sel[0]]
+        self.templates = [t for t in self.templates if t.get("id") != sel[0]]
         self._save_templates()
         self._refresh_list()
         self._new_template()
@@ -258,7 +262,7 @@ class TemplateManagerFrame(ttk.Frame):
         sel = self.tree.selection()
         if not sel:
             return
-        tmpl = next((t for t in self.templates if t["id"] == sel[0]), None)
+        tmpl = next((t for t in self.templates if t.get("id") == sel[0]), None)
         if not tmpl:
             return
         path = filedialog.asksaveasfilename(defaultextension=".json")
@@ -373,7 +377,7 @@ class TemplateManagerFrame(ttk.Frame):
             return
         if getattr(self, "current_template", None):
             for idx, tmpl in enumerate(self.templates):
-                if tmpl["id"] == self.current_template["id"]:
+                if tmpl.get("id") == self.current_template["id"]:
                     self.templates[idx] = data
                     break
         else:
@@ -394,7 +398,7 @@ class TemplateManagerFrame(ttk.Frame):
                 },
             }
         else:
-            tmpl = next((t for t in self.templates if t["id"] == sel[0]), None)
+            tmpl = next((t for t in self.templates if t.get("id") == sel[0]), None)
         if not tmpl:
             return
         blocks = tmpl.get("review_blocks", [])
