@@ -4,7 +4,15 @@ import tkinter as tk
 from pathlib import Path
 from tkinter import messagebox, ttk, filedialog, scrolledtext
 
+import requests
+
 TEMPLATES_PATH = Path("config/templates.json")
+COMMUNITY_INDEX_URL = (
+    "https://raw.githubusercontent.com/swe-agent/community-templates/main/templates.json"
+)
+COMMUNITY_UPLOAD_URL = (
+    "https://swe-agent-community-templates.fly.dev/upload"
+)
 SITE_CATEGORIES = [
     "Auto Services",
     "Food",
@@ -47,7 +55,17 @@ class TemplateManagerFrame(ttk.Frame):
     # ------------------------------------------------------------------
     # UI setup
     def _build_widgets(self) -> None:
-        left = ttk.Frame(self)
+        notebook = ttk.Notebook(self)
+        notebook.pack(fill="both", expand=True)
+        local = ttk.Frame(notebook)
+        community = ttk.Frame(notebook)
+        notebook.add(local, text="Local")
+        notebook.add(community, text="Community")
+        self._build_local_tab(local)
+        self._build_community_tab(community)
+
+    def _build_local_tab(self, parent) -> None:
+        left = ttk.Frame(parent)
         left.pack(side="left", fill="y")
 
         search_frame = ttk.Frame(left)
@@ -75,7 +93,7 @@ class TemplateManagerFrame(ttk.Frame):
         ttk.Button(btns, text="Import", command=self._import_template).pack(side="left", padx=4)
         ttk.Button(btns, text="Export", command=self._export_template).pack(side="left")
 
-        right = ttk.Frame(self)
+        right = ttk.Frame(parent)
         right.pack(side="left", fill="both", expand=True, padx=5)
 
         form = ttk.Frame(right)
@@ -118,6 +136,32 @@ class TemplateManagerFrame(ttk.Frame):
 
         self.preview_box = scrolledtext.ScrolledText(right, height=8, state="disabled")
         self.preview_box.pack(fill="both", expand=True, pady=4)
+
+    def _build_community_tab(self, parent) -> None:
+        top = ttk.Frame(parent)
+        top.pack(fill="both", expand=True)
+        cols = ("name", "category")
+        self.community_tree = ttk.Treeview(top, columns=cols, show="headings", height=12)
+        self.community_tree.heading("name", text="Name")
+        self.community_tree.heading("category", text="Category")
+        self.community_tree.column("name", width=160)
+        self.community_tree.column("category", width=120)
+        self.community_tree.pack(fill="both", expand=True)
+
+        btns = ttk.Frame(parent)
+        btns.pack(fill="x", pady=4)
+        ttk.Button(btns, text="Refresh", command=self._fetch_community_templates).pack(
+            side="left"
+        )
+        ttk.Button(btns, text="Download", command=self._download_community_template).pack(
+            side="left", padx=4
+        )
+        ttk.Button(btns, text="Upload Current", command=self._upload_current_template).pack(
+            side="left"
+        )
+
+        self.community_templates: list[dict] = []
+        self._fetch_community_templates()
 
     def _make_slider(self, frame, text, var, row):
         ttk.Label(frame, text=text).grid(row=row, column=0, sticky="w")
@@ -222,6 +266,68 @@ class TemplateManagerFrame(ttk.Frame):
             return
         with open(path, "w", encoding="utf-8") as f:
             json.dump(tmpl, f, indent=2)
+
+    # ------------------------------------------------------------------
+    # Community operations
+    def _fetch_community_templates(self) -> None:
+        try:
+            resp = requests.get(COMMUNITY_INDEX_URL, timeout=10)
+            resp.raise_for_status()
+            data = resp.json()
+            self.community_templates = data if isinstance(data, list) else []
+        except Exception as exc:
+            messagebox.showerror("Community", f"Failed to fetch templates: {exc}")
+            self.community_templates = []
+        self._refresh_community_list()
+
+    def _refresh_community_list(self) -> None:
+        if not hasattr(self, "community_tree"):
+            return
+        for item in self.community_tree.get_children():
+            self.community_tree.delete(item)
+        for tmpl in self.community_templates:
+            self.community_tree.insert(
+                "",
+                "end",
+                iid=tmpl.get("id", ""),
+                values=(tmpl.get("name", ""), tmpl.get("category", "")),
+            )
+
+    def _download_community_template(self) -> None:
+        sel = self.community_tree.selection()
+        if not sel:
+            return
+        tmpl = next((t for t in self.community_templates if t.get("id") == sel[0]), None)
+        if not tmpl:
+            return
+        url = tmpl.get("url")
+        if not url:
+            messagebox.showerror("Download", "Template URL missing")
+            return
+        try:
+            resp = requests.get(url, timeout=10)
+            resp.raise_for_status()
+            data = resp.json()
+        except Exception as exc:
+            messagebox.showerror("Download", str(exc))
+            return
+        data["id"] = self._next_id()
+        self.templates.append(data)
+        self._save_templates()
+        self._refresh_list()
+        messagebox.showinfo("Community", f"Imported template '{data.get('name', '')}'")
+
+    def _upload_current_template(self) -> None:
+        tmpl = getattr(self, "current_template", None)
+        if not tmpl:
+            messagebox.showwarning("Upload", "No template selected")
+            return
+        try:
+            resp = requests.post(COMMUNITY_UPLOAD_URL, json=tmpl, timeout=10)
+            resp.raise_for_status()
+            messagebox.showinfo("Upload", "Template uploaded")
+        except Exception as exc:
+            messagebox.showerror("Upload", str(exc))
 
     # ------------------------------------------------------------------
     # Block operations
