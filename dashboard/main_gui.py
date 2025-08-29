@@ -352,7 +352,13 @@ class GuardianDeck(tk.Tk):
         self.project_listbox.configure(yscrollcommand=scrollbar.set)
         self.project_listbox.bind(
             "<<ListboxSelect>>",
-            lambda e: (self.refresh_project_accounts(), self.refresh_project_proxies()),
+            lambda e: (
+                self.refresh_project_accounts(),
+                self.refresh_project_proxies(),
+                self.refresh_project_templates(),
+                self.refresh_project_sites(),
+                self.refresh_project_schedule(),
+            ),
         )
 
         btns = ttk.Frame(frame)
@@ -403,12 +409,75 @@ class GuardianDeck(tk.Tk):
             command=self.unassign_proxy_from_project_from_projects_tab,
         ).pack(side="left", padx=5)
 
+        templates_frame = ttk.LabelFrame(frame, text="Templates")
+        templates_frame.pack(fill="both", expand=True, padx=10, pady=5)
+        self.project_templates_list = tk.Listbox(templates_frame)
+        self.project_templates_list.pack(side="left", fill="both", expand=True)
+        tmpl_scroll = ttk.Scrollbar(templates_frame, orient="vertical", command=self.project_templates_list.yview)
+        tmpl_scroll.pack(side="right", fill="y")
+        self.project_templates_list.configure(yscrollcommand=tmpl_scroll.set)
+
+        tmpl_btns = ttk.Frame(frame)
+        tmpl_btns.pack(pady=5)
+        ttk.Button(
+            tmpl_btns,
+            text="Assign Template",
+            command=self.assign_template_to_project_from_projects_tab,
+        ).pack(side="left", padx=5)
+        ttk.Button(
+            tmpl_btns,
+            text="Unassign Selected",
+            command=self.unassign_template_from_project_from_projects_tab,
+        ).pack(side="left", padx=5)
+
+        sites_frame = ttk.LabelFrame(frame, text="Sites")
+        sites_frame.pack(fill="both", expand=True, padx=10, pady=5)
+        self.project_sites_list = tk.Listbox(sites_frame)
+        self.project_sites_list.pack(side="left", fill="both", expand=True)
+        site_scroll = ttk.Scrollbar(sites_frame, orient="vertical", command=self.project_sites_list.yview)
+        site_scroll.pack(side="right", fill="y")
+        self.project_sites_list.configure(yscrollcommand=site_scroll.set)
+
+        site_btns = ttk.Frame(frame)
+        site_btns.pack(pady=5)
+        ttk.Button(
+            site_btns,
+            text="Assign Site",
+            command=self.assign_site_to_project_from_projects_tab,
+        ).pack(side="left", padx=5)
+        ttk.Button(
+            site_btns,
+            text="Unassign Selected",
+            command=self.unassign_site_from_project_from_projects_tab,
+        ).pack(side="left", padx=5)
+
+        schedule_frame = ttk.LabelFrame(frame, text="Schedule Config")
+        schedule_frame.pack(fill="x", padx=10, pady=5)
+        self.project_schedule_var = tk.StringVar()
+        ttk.Label(schedule_frame, textvariable=self.project_schedule_var).pack(side="left", padx=5)
+
+        schedule_btns = ttk.Frame(frame)
+        schedule_btns.pack(pady=5)
+        ttk.Button(
+            schedule_btns,
+            text="Set Schedule",
+            command=self.assign_schedule_to_project_from_projects_tab,
+        ).pack(side="left", padx=5)
+        ttk.Button(
+            schedule_btns,
+            text="Clear Schedule",
+            command=self.clear_schedule_from_project_from_projects_tab,
+        ).pack(side="left", padx=5)
+
         self.project_account_ids: list[int] = []
         self.project_proxy_ids: list[int] = []
 
         self.refresh_projects_tab()
         self.refresh_project_accounts()
         self.refresh_project_proxies()
+        self.refresh_project_templates()
+        self.refresh_project_sites()
+        self.refresh_project_schedule()
 
     def refresh_projects_tab(self) -> None:
         self.project_listbox.delete(0, "end")
@@ -566,6 +635,125 @@ class GuardianDeck(tk.Tk):
         database.remove_proxy_from_project(proxy_id, project)
         self.refresh_project_proxies()
         self.refresh_proxies()
+
+    def refresh_project_templates(self) -> None:
+        self.project_templates_list.delete(0, "end")
+        sel = self.project_listbox.curselection()
+        if not sel:
+            return
+        project = self.project_listbox.get(sel[0])
+        templates = project_hub.list_templates(project)
+        for tmpl in templates:
+            self.project_templates_list.insert("end", tmpl)
+
+    def refresh_project_sites(self) -> None:
+        self.project_sites_list.delete(0, "end")
+        sel = self.project_listbox.curselection()
+        if not sel:
+            return
+        project = self.project_listbox.get(sel[0])
+        sites = project_hub.list_sites(project)
+        for site in sites:
+            self.project_sites_list.insert("end", site)
+
+    def refresh_project_schedule(self) -> None:
+        self.project_schedule_var.set("")
+        sel = self.project_listbox.curselection()
+        if not sel:
+            return
+        project = self.project_listbox.get(sel[0])
+        sched = project_hub.get_schedule(project)
+        if sched:
+            self.project_schedule_var.set(str(sched))
+
+    def assign_template_to_project_from_projects_tab(self) -> None:
+        sel = self.project_listbox.curselection()
+        if not sel:
+            return
+        project = self.project_listbox.get(sel[0])
+        templates = [t["name"] for t in self.load_templates_list()]
+        if not templates:
+            messagebox.showinfo("Templates", "No templates available.")
+            return
+        dialog = tk.Toplevel(self)
+        dialog.title("Assign Template")
+        ttk.Label(dialog, text="Template:").pack(anchor="w", padx=10, pady=10)
+        tmpl_var = tk.StringVar(value=templates[0])
+        ttk.Combobox(dialog, values=templates, textvariable=tmpl_var, state="readonly").pack(
+            padx=10, pady=5
+        )
+
+        def save() -> None:
+            project_hub.add_template(project, tmpl_var.get())
+            dialog.destroy()
+            self.refresh_project_templates()
+
+        ttk.Button(dialog, text="Assign", command=save).pack(pady=10)
+
+    def unassign_template_from_project_from_projects_tab(self) -> None:
+        sel_proj = self.project_listbox.curselection()
+        sel_tmpl = self.project_templates_list.curselection()
+        if not sel_proj or not sel_tmpl:
+            return
+        project = self.project_listbox.get(sel_proj[0])
+        template = self.project_templates_list.get(sel_tmpl[0])
+        project_hub.remove_template(project, template)
+        self.refresh_project_templates()
+
+    def assign_site_to_project_from_projects_tab(self) -> None:
+        sel = self.project_listbox.curselection()
+        if not sel:
+            return
+        project = self.project_listbox.get(sel[0])
+        loader = SiteConfigLoader(TEMPLATES_DIR)
+        sites = list(loader.load_templates().keys())
+        if not sites:
+            messagebox.showinfo("Sites", "No sites available.")
+            return
+        dialog = tk.Toplevel(self)
+        dialog.title("Assign Site")
+        ttk.Label(dialog, text="Site:").pack(anchor="w", padx=10, pady=10)
+        site_var = tk.StringVar(value=sites[0])
+        ttk.Combobox(dialog, values=sites, textvariable=site_var, state="readonly").pack(
+            padx=10, pady=5
+        )
+
+        def save() -> None:
+            project_hub.add_site(project, site_var.get())
+            dialog.destroy()
+            self.refresh_project_sites()
+
+        ttk.Button(dialog, text="Assign", command=save).pack(pady=10)
+
+    def unassign_site_from_project_from_projects_tab(self) -> None:
+        sel_proj = self.project_listbox.curselection()
+        sel_site = self.project_sites_list.curselection()
+        if not sel_proj or not sel_site:
+            return
+        project = self.project_listbox.get(sel_proj[0])
+        site = self.project_sites_list.get(sel_site[0])
+        project_hub.remove_site(project, site)
+        self.refresh_project_sites()
+
+    def assign_schedule_to_project_from_projects_tab(self) -> None:
+        sel = self.project_listbox.curselection()
+        if not sel:
+            return
+        project = self.project_listbox.get(sel[0])
+        path = filedialog.askopenfilename(
+            title="Select Schedule Config", filetypes=[("JSON Files", "*.json"), ("All Files", "*")]
+        )
+        if path:
+            project_hub.set_schedule(project, path)
+            self.refresh_project_schedule()
+
+    def clear_schedule_from_project_from_projects_tab(self) -> None:
+        sel = self.project_listbox.curselection()
+        if not sel:
+            return
+        project = self.project_listbox.get(sel[0])
+        project_hub.clear_schedule(project)
+        self.refresh_project_schedule()
 
     # --- REVIEW QUEUE ------------------------------------------------
     def create_queue_tab(self, frame: ttk.Frame) -> None:
