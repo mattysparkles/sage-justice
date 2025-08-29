@@ -905,6 +905,7 @@ class GuardianDeck(tk.Tk):
         ttk.Button(btns, text="Mark as Failed", command=self.mark_account_failed).pack(side="left", padx=5)
         ttk.Button(btns, text="Assign to Project", command=self.assign_account_to_project_dialog).pack(side="left", padx=5)
         ttk.Button(btns, text="Unassign from Project", command=self.unassign_account_from_project_dialog).pack(side="left", padx=5)
+        ttk.Button(btns, text="Import From File", command=self.import_accounts_from_file).pack(side="left", padx=5)
 
         self.refresh_accounts()
 
@@ -930,15 +931,92 @@ class GuardianDeck(tk.Tk):
             )
 
     def add_account_dialog(self) -> None:
-        username = simpledialog.askstring("Add Account", "Username:")
-        if not username:
-            return
-        password = simpledialog.askstring("Add Account", "Password:", show="*")
-        if password is None:
-            return
-        category = simpledialog.askstring("Add Account", "Category:") or "general"
-        database.add_account(username, password, category)
-        self.refresh_accounts()
+        dialog = tk.Toplevel(self)
+        dialog.title("Add Account")
+
+        fields = ttk.Frame(dialog)
+        fields.pack(padx=10, pady=10)
+
+        ttk.Label(fields, text="Username:").grid(row=0, column=0, sticky="w")
+        user_var = tk.StringVar()
+        ttk.Entry(fields, textvariable=user_var).grid(row=0, column=1)
+
+        ttk.Label(fields, text="Password:").grid(row=1, column=0, sticky="w")
+        pass_var = tk.StringVar()
+        ttk.Entry(fields, textvariable=pass_var, show="*").grid(row=1, column=1)
+
+        ttk.Label(fields, text="Category:").grid(row=2, column=0, sticky="w")
+        cat_var = tk.StringVar(value="general")
+        ttk.Entry(fields, textvariable=cat_var).grid(row=2, column=1)
+
+        ttk.Label(fields, text="Site URL:").grid(row=3, column=0, sticky="w")
+        site_var = tk.StringVar()
+        ttk.Entry(fields, textvariable=site_var).grid(row=3, column=1)
+
+        ttk.Label(fields, text="Login URL:").grid(row=4, column=0, sticky="w")
+        login_var = tk.StringVar()
+        ttk.Entry(fields, textvariable=login_var).grid(row=4, column=1)
+
+        captcha_var = tk.BooleanVar()
+        ttk.Checkbutton(fields, text="Requires Captcha", variable=captcha_var).grid(row=5, column=1, sticky="w")
+
+        ttk.Label(fields, text="Phone (optional):").grid(row=6, column=0, sticky="w")
+        phone_var = tk.StringVar()
+        ttk.Entry(fields, textvariable=phone_var).grid(row=6, column=1)
+
+        ttk.Label(fields, text="Project:").grid(row=7, column=0, sticky="w")
+        projects = self.load_projects_list()
+        proj_var = tk.StringVar()
+        proj_box = ttk.Combobox(fields, values=projects, textvariable=proj_var, state="readonly")
+        proj_box.grid(row=7, column=1)
+
+        ttk.Label(fields, text="Social Login:").grid(row=8, column=0, sticky="w")
+        social_var = tk.StringVar()
+        social_box = ttk.Combobox(
+            fields,
+            values=["", "google", "facebook", "twitter", "linkedin"],
+            textvariable=social_var,
+            state="readonly",
+        )
+        social_box.grid(row=8, column=1)
+
+        sms_var = tk.BooleanVar()
+        voice_var = tk.BooleanVar()
+        ttk.Checkbutton(fields, text="SMS Verification", variable=sms_var).grid(row=9, column=1, sticky="w")
+        ttk.Checkbutton(fields, text="Voice Verification", variable=voice_var).grid(row=10, column=1, sticky="w")
+
+        btns = ttk.Frame(dialog)
+        btns.pack(pady=10)
+
+        def save() -> None:
+            username = user_var.get().strip()
+            password = pass_var.get().strip()
+            if not username or not password:
+                messagebox.showwarning("Add Account", "Username and password required.")
+                return
+            category = cat_var.get().strip() or "general"
+            metadata = {
+                "site_url": site_var.get().strip() or None,
+                "login_url": login_var.get().strip() or None,
+                "captcha_required": captcha_var.get(),
+                "phone": phone_var.get().strip() or None,
+                "social_login": social_var.get().strip() or None,
+                "sms_verification": sms_var.get(),
+                "voice_verification": voice_var.get(),
+            }
+            account_id = database.add_account(username, password, category, metadata=metadata)
+            project = proj_var.get().strip()
+            if project:
+                database.assign_account_to_project(account_id, project)
+            if sms_var.get() and metadata["phone"]:
+                self.trigger_sms_verification(metadata["phone"])
+            if voice_var.get() and metadata["phone"]:
+                self.trigger_voice_verification(metadata["phone"])
+            dialog.destroy()
+            self.refresh_accounts()
+
+        ttk.Button(btns, text="Save", command=save).pack(side="left", padx=5)
+        ttk.Button(btns, text="Cancel", command=dialog.destroy).pack(side="left", padx=5)
 
     def delete_selected_account(self) -> None:
         sel = self.accounts_tree.selection()
@@ -955,6 +1033,55 @@ class GuardianDeck(tk.Tk):
         account_id = int(sel[0])
         database.update_account_health(account_id, "failed")
         self.refresh_accounts()
+
+    def import_accounts_from_file(self) -> None:
+        path = filedialog.askopenfilename()
+        if not path:
+            return
+        count = 0
+        with open(path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                parts = line.split(":")
+                username = parts[0]
+                password = parts[1] if len(parts) > 1 else ""
+                site_url = parts[2] if len(parts) > 2 else ""
+                login_url = parts[3] if len(parts) > 3 else ""
+                captcha_flag = parts[4].lower() in ("1", "true", "yes") if len(parts) > 4 else False
+                phone = parts[5] if len(parts) > 5 and parts[5] else None
+                project = parts[6] if len(parts) > 6 and parts[6] else None
+                social = parts[7] if len(parts) > 7 and parts[7] else None
+                sms_flag = parts[8].lower() in ("1", "true", "yes") if len(parts) > 8 else False
+                voice_flag = parts[9].lower() in ("1", "true", "yes") if len(parts) > 9 else False
+                metadata = {
+                    "site_url": site_url or None,
+                    "login_url": login_url or None,
+                    "captcha_required": captcha_flag,
+                    "phone": phone,
+                    "social_login": social or None,
+                    "sms_verification": sms_flag,
+                    "voice_verification": voice_flag,
+                }
+                account_id = database.add_account(username, password, "general", metadata=metadata)
+                if project:
+                    database.assign_account_to_project(account_id, project)
+                if sms_flag and phone:
+                    self.trigger_sms_verification(phone)
+                if voice_flag and phone:
+                    self.trigger_voice_verification(phone)
+                count += 1
+        messagebox.showinfo("Import", f"Imported {count} accounts.")
+        self.refresh_accounts()
+
+    def trigger_sms_verification(self, phone: str) -> None:
+        """Hook for integrating SMS verification."""
+        logger.info("SMS verification hook for %s", phone)
+
+    def trigger_voice_verification(self, phone: str) -> None:
+        """Hook for integrating voice call verification."""
+        logger.info("Voice verification hook for %s", phone)
 
     def assign_account_to_project_dialog(self) -> None:
         sel = self.accounts_tree.selection()
