@@ -12,6 +12,7 @@ from core.site_registry import (
     save_site,
 )
 from tools.guided_mapper import run_guided_mapper
+from core import database, project_hub
 
 CAPTCHA_OPTIONS = ["manual", "solver", "none"]
 
@@ -32,6 +33,8 @@ class SiteManagerFrame(ttk.Frame):
     # Data helpers
     def _load_sites(self) -> None:
         self.sites = get_sites()
+        for entry in self.sites:
+            entry["projects"] = database.get_site_projects(entry["name"])
 
     def _save_current(self) -> None:
         data = {
@@ -55,7 +58,12 @@ class SiteManagerFrame(ttk.Frame):
         except ValueError as exc:
             messagebox.showerror("Site", str(exc))
             return
+        old_name = self.current_name
         self.current_name = data["site"]
+        if old_name and old_name != self.current_name:
+            for proj in database.get_site_projects(old_name):
+                database.remove_site_from_project(old_name, proj)
+                database.assign_site_to_project(self.current_name, proj)
         self._load_sites()
         self._refresh_list()
         self.tree.selection_set(filename)
@@ -68,17 +76,19 @@ class SiteManagerFrame(ttk.Frame):
         left = ttk.Frame(self)
         left.pack(side="left", fill="y")
 
-        cols = ("name", "category", "login", "captcha")
+        cols = ("name", "category", "projects", "login", "captcha")
         self.tree = ttk.Treeview(left, columns=cols, show="headings", height=12)
         headings = {
             "name": "Site",
             "category": "Category",
+            "projects": "Projects",
             "login": "Login",
             "captcha": "Captcha",
         }
         for col in cols:
             self.tree.heading(col, text=headings[col])
-            self.tree.column(col, width=120)
+            width = 150 if col == "projects" else 120
+            self.tree.column(col, width=width)
         self.tree.pack(fill="y", expand=True)
         self.tree.bind("<<TreeviewSelect>>", lambda _e: self._load_selected())
 
@@ -89,6 +99,8 @@ class SiteManagerFrame(ttk.Frame):
         ttk.Button(btns, text="Import", command=self._import_site).pack(side="left")
         ttk.Button(btns, text="Export", command=self._export_site).pack(side="left", padx=4)
         ttk.Button(btns, text="Map Fields", command=self._guided_mapper).pack(side="left")
+        ttk.Button(btns, text="Assign to Project", command=self._assign_to_project).pack(side="left", padx=4)
+        ttk.Button(btns, text="Unassign", command=self._unassign_from_project).pack(side="left")
 
         right = ttk.Frame(self)
         right.pack(side="left", fill="both", expand=True, padx=5)
@@ -138,6 +150,7 @@ class SiteManagerFrame(ttk.Frame):
                 values=(
                     entry.get("name"),
                     entry.get("category", ""),
+                    ", ".join(entry.get("projects", [])),
                     "yes" if entry.get("requires_login") else "no",
                     entry.get("captcha", ""),
                 ),
@@ -178,12 +191,65 @@ class SiteManagerFrame(ttk.Frame):
             return
         if not messagebox.askyesno("Delete", "Delete selected site?"):
             return
+        site_name = self.tree.item(sel[0])["values"][0]
+        for proj in database.get_site_projects(site_name):
+            database.remove_site_from_project(site_name, proj)
         delete_site(sel[0])
         self._load_sites()
         self._refresh_list()
         self._new_site()
         if self.on_update:
             self.on_update()
+
+    def _assign_to_project(self) -> None:
+        sel = self.tree.selection()
+        if not sel:
+            return
+        site_name = self.tree.item(sel[0])["values"][0]
+        projects = project_hub.list_projects()
+        if not projects:
+            messagebox.showinfo("Projects", "No projects available.")
+            return
+        dialog = tk.Toplevel(self)
+        dialog.title("Assign to Project")
+        ttk.Label(dialog, text="Project:").pack(anchor="w", padx=10, pady=10)
+        proj_var = tk.StringVar(value=projects[0])
+        ttk.Combobox(dialog, values=projects, textvariable=proj_var, state="readonly").pack(padx=10, pady=5)
+
+        def save() -> None:
+            database.assign_site_to_project(site_name, proj_var.get())
+            dialog.destroy()
+            self._load_sites()
+            self._refresh_list()
+            if self.on_update:
+                self.on_update()
+
+        ttk.Button(dialog, text="Assign", command=save).pack(pady=10)
+
+    def _unassign_from_project(self) -> None:
+        sel = self.tree.selection()
+        if not sel:
+            return
+        site_name = self.tree.item(sel[0])["values"][0]
+        projects = database.get_site_projects(site_name)
+        if not projects:
+            messagebox.showinfo("Unassign", "Site not assigned to any project.")
+            return
+        dialog = tk.Toplevel(self)
+        dialog.title("Unassign from Project")
+        ttk.Label(dialog, text="Project:").pack(anchor="w", padx=10, pady=10)
+        proj_var = tk.StringVar(value=projects[0])
+        ttk.Combobox(dialog, values=projects, textvariable=proj_var, state="readonly").pack(padx=10, pady=5)
+
+        def remove() -> None:
+            database.remove_site_from_project(site_name, proj_var.get())
+            dialog.destroy()
+            self._load_sites()
+            self._refresh_list()
+            if self.on_update:
+                self.on_update()
+
+        ttk.Button(dialog, text="Remove", command=remove).pack(pady=10)
 
     def _import_site(self) -> None:
         path = filedialog.askopenfilename(filetypes=[("JSON", "*.json")])
