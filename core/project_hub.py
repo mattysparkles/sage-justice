@@ -113,3 +113,112 @@ def enforce_constraints(project: str) -> bool:
             if current > limit:
                 return False
     return True
+
+
+# --- Template Management -------------------------------------------------
+
+def list_templates(project: str) -> List[str]:
+    """Return templates assigned to a project."""
+    proj = get_project(project)
+    if not proj:
+        return []
+    return proj.get("resources", {}).get("templates", [])
+
+
+def add_template(project: str, template: str) -> bool:
+    """Assign a template to a project."""
+    data = _load_projects()
+    for proj in data:
+        if proj.get("name") == project:
+            resources = proj.setdefault("resources", {})
+            templates = resources.setdefault("templates", [])
+            if template not in templates:
+                templates.append(template)
+                _save_projects(data)
+            return True
+    return False
+
+
+def remove_template(project: str, template: str) -> bool:
+    """Remove a template from a project."""
+    data = _load_projects()
+    for proj in data:
+        if proj.get("name") == project:
+            templates = proj.setdefault("resources", {}).setdefault("templates", [])
+            if template in templates:
+                templates.remove(template)
+                _save_projects(data)
+            return True
+    return False
+
+
+# --- Site Management ------------------------------------------------------
+
+def list_sites(project: str) -> List[str]:
+    """Return sites associated with a project."""
+    proj = get_project(project)
+    if not proj:
+        return []
+    return proj.get("resources", {}).get("sites", [])
+
+
+def add_site(project: str, site: str) -> bool:
+    """Assign a site to a project."""
+    data = _load_projects()
+    for proj in data:
+        if proj.get("name") == project:
+            resources = proj.setdefault("resources", {})
+            sites = resources.setdefault("sites", [])
+            if site not in sites:
+                sites.append(site)
+                _save_projects(data)
+            return True
+    return False
+
+
+def remove_site(project: str, site: str) -> bool:
+    """Remove a site association from a project."""
+    data = _load_projects()
+    for proj in data:
+        if proj.get("name") == project:
+            sites = proj.setdefault("resources", {}).setdefault("sites", [])
+            if site in sites:
+                sites.remove(site)
+                _save_projects(data)
+            return True
+    return False
+
+
+# --- Schedule Configuration ----------------------------------------------
+
+def get_schedule(project: str) -> Any:
+    """Get schedule configuration for a project."""
+    proj = get_project(project)
+    if not proj:
+        return None
+    return proj.get("resources", {}).get("schedule")
+
+
+def set_schedule(project: str, schedule: Any) -> bool:
+    """Set schedule configuration for a project."""
+    data = _load_projects()
+    for proj in data:
+        if proj.get("name") == project:
+            resources = proj.setdefault("resources", {})
+            resources["schedule"] = schedule
+            _save_projects(data)
+            return True
+    return False
+
+
+def clear_schedule(project: str) -> bool:
+    """Remove schedule configuration from a project."""
+    data = _load_projects()
+    for proj in data:
+        if proj.get("name") == project:
+            resources = proj.setdefault("resources", {})
+            if "schedule" in resources:
+                resources.pop("schedule")
+                _save_projects(data)
+            return True
+    return False
