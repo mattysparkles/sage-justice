@@ -11,6 +11,7 @@ from tkinter import ttk
 from tkinter.scrolledtext import ScrolledText
 
 import requests
+import socket
 
 from core import database
 from core.config_loader import load_json_config
@@ -1133,12 +1134,14 @@ class GuardianDeck(tk.Tk):
 
     # --- PROXIES ------------------------------------------------------
     def create_proxy_tab(self, frame: ttk.Frame) -> None:
-        columns = ("ip", "port", "region", "status", "projects")
+        columns = ("ip", "port", "region", "status", "projects", "sites", "accounts")
         self.proxy_tree = ttk.Treeview(frame, columns=columns, show="headings")
         for col in columns:
             self.proxy_tree.heading(col, text=col.title())
         self.proxy_tree.column("status", width=100, anchor="center")
         self.proxy_tree.column("projects", width=150)
+        self.proxy_tree.column("sites", width=150)
+        self.proxy_tree.column("accounts", width=150)
         self.proxy_tree.pack(fill="both", expand=True, padx=10, pady=5)
         self.proxy_tree.tag_configure("Working", foreground="green")
         self.proxy_tree.tag_configure("Down", foreground="red")
@@ -1157,7 +1160,20 @@ class GuardianDeck(tk.Tk):
         ttk.Button(entry, text="Unassign from Project", command=self.unassign_proxy_from_project_dialog).pack(
             side="left", padx=5
         )
+        ttk.Button(entry, text="Assign to Site", command=self.assign_proxy_to_site_dialog).pack(
+            side="left", padx=5
+        )
+        ttk.Button(entry, text="Unassign from Site", command=self.unassign_proxy_from_site_dialog).pack(
+            side="left", padx=5
+        )
+        ttk.Button(entry, text="Assign to Account", command=self.assign_proxy_to_account_dialog).pack(
+            side="left", padx=5
+        )
+        ttk.Button(entry, text="Unassign from Account", command=self.unassign_proxy_from_account_dialog).pack(
+            side="left", padx=5
+        )
         ttk.Button(entry, text="Import From File", command=self.import_proxies_from_file).pack(side="left", padx=5)
+        ttk.Button(entry, text="Import VPN Configs", command=self.import_vpn_configs).pack(side="left", padx=5)
 
         self.refresh_proxies()
 
@@ -1167,6 +1183,8 @@ class GuardianDeck(tk.Tk):
         for proxy in database.get_all_proxies():
             tag = proxy.get("status") or "Unknown"
             projects = proxy.get("projects") or ""
+            sites = proxy.get("sites") or ""
+            accounts = proxy.get("accounts") or ""
             self.proxy_tree.insert(
                 "",
                 "end",
@@ -1177,6 +1195,8 @@ class GuardianDeck(tk.Tk):
                     proxy.get("region", ""),
                     proxy.get("status", "Unknown"),
                     projects,
+                    sites,
+                    accounts,
                 ),
                 tags=(tag,),
             )
@@ -1285,6 +1305,140 @@ class GuardianDeck(tk.Tk):
                 count += 1
         messagebox.showinfo("Import", f"Imported {count} proxies.")
         self.refresh_proxies()
+
+    def import_vpn_configs(self) -> None:
+        paths = filedialog.askopenfilenames(
+            filetypes=[("VPN configs", "*.ovpn *.conf *.nordvpn"), ("All files", "*.*")]
+        )
+        if not paths:
+            return
+        count = 0
+        for path in paths:
+            server = None
+            port = None
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if line.startswith("remote"):
+                            parts = line.split()
+                            if len(parts) >= 2:
+                                server = parts[1]
+                            if len(parts) >= 3:
+                                port = parts[2]
+                            break
+            except Exception:
+                continue
+            if server:
+                try:
+                    ip_lookup = socket.gethostbyname(server)
+                except Exception:
+                    ip_lookup = server
+                region = self.lookup_region(ip_lookup)
+                database.add_proxy(server, port, region, "Unknown")
+                count += 1
+        messagebox.showinfo("Import", f"Imported {count} VPN profiles.")
+        self.refresh_proxies()
+
+    def assign_proxy_to_site_dialog(self) -> None:
+        sel = self.proxy_tree.selection()
+        if not sel:
+            return
+        proxy_id = int(sel[0])
+        sites = database.get_all_sites()
+        if not sites:
+            messagebox.showinfo("Sites", "No sites available.")
+            return
+        dialog = tk.Toplevel(self)
+        dialog.title("Assign to Site")
+        ttk.Label(dialog, text="Site:").pack(anchor="w", padx=10, pady=10)
+        site_var = tk.StringVar(value=sites[0])
+        ttk.Combobox(dialog, values=sites, textvariable=site_var, state="readonly").pack(
+            padx=10, pady=5
+        )
+
+        def save() -> None:
+            database.assign_proxy_to_site(proxy_id, site_var.get())
+            dialog.destroy()
+            self.refresh_proxies()
+
+        ttk.Button(dialog, text="Assign", command=save).pack(pady=10)
+
+    def unassign_proxy_from_site_dialog(self) -> None:
+        sel = self.proxy_tree.selection()
+        if not sel:
+            return
+        proxy_id = int(sel[0])
+        sites = database.get_proxy_sites(proxy_id)
+        if not sites:
+            messagebox.showinfo("Unassign", "Proxy not assigned to any site.")
+            return
+        dialog = tk.Toplevel(self)
+        dialog.title("Unassign from Site")
+        ttk.Label(dialog, text="Site:").pack(anchor="w", padx=10, pady=10)
+        site_var = tk.StringVar(value=sites[0])
+        ttk.Combobox(dialog, values=sites, textvariable=site_var, state="readonly").pack(
+            padx=10, pady=5
+        )
+
+        def remove() -> None:
+            database.remove_proxy_from_site(proxy_id, site_var.get())
+            dialog.destroy()
+            self.refresh_proxies()
+
+        ttk.Button(dialog, text="Remove", command=remove).pack(pady=10)
+
+    def assign_proxy_to_account_dialog(self) -> None:
+        sel = self.proxy_tree.selection()
+        if not sel:
+            return
+        proxy_id = int(sel[0])
+        accounts = database.get_all_accounts()
+        if not accounts:
+            messagebox.showinfo("Accounts", "No accounts available.")
+            return
+        dialog = tk.Toplevel(self)
+        dialog.title("Assign to Account")
+        ttk.Label(dialog, text="Account:").pack(anchor="w", padx=10, pady=10)
+        values = [f"{a['id']}: {a['username']}" for a in accounts]
+        acc_var = tk.StringVar(value=values[0])
+        ttk.Combobox(dialog, values=values, textvariable=acc_var, state="readonly").pack(
+            padx=10, pady=5
+        )
+
+        def save() -> None:
+            acc_id = int(acc_var.get().split(":", 1)[0])
+            database.assign_proxy_to_account(proxy_id, acc_id)
+            dialog.destroy()
+            self.refresh_proxies()
+
+        ttk.Button(dialog, text="Assign", command=save).pack(pady=10)
+
+    def unassign_proxy_from_account_dialog(self) -> None:
+        sel = self.proxy_tree.selection()
+        if not sel:
+            return
+        proxy_id = int(sel[0])
+        accounts = database.get_proxy_accounts(proxy_id)
+        if not accounts:
+            messagebox.showinfo("Unassign", "Proxy not assigned to any account.")
+            return
+        dialog = tk.Toplevel(self)
+        dialog.title("Unassign from Account")
+        ttk.Label(dialog, text="Account:").pack(anchor="w", padx=10, pady=10)
+        values = [f"{a['id']}: {a['username']}" for a in accounts]
+        acc_var = tk.StringVar(value=values[0])
+        ttk.Combobox(dialog, values=values, textvariable=acc_var, state="readonly").pack(
+            padx=10, pady=5
+        )
+
+        def remove() -> None:
+            acc_id = int(acc_var.get().split(":", 1)[0])
+            database.remove_proxy_from_account(proxy_id, acc_id)
+            dialog.destroy()
+            self.refresh_proxies()
+
+        ttk.Button(dialog, text="Remove", command=remove).pack(pady=10)
 
     def lookup_region(self, ip: str) -> str | None:
         try:
