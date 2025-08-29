@@ -34,12 +34,14 @@ class AsyncReviewQueue:
                     timestamp, review, template, proxy, account = item
                 self.queue.put((timestamp, review, template, proxy, account))
         except FileNotFoundError:
+            QUEUE_PATH.parent.mkdir(parents=True, exist_ok=True)
             QUEUE_PATH.write_text("[]", encoding="utf-8")
         except json.JSONDecodeError:
             pass
 
     def _save(self) -> None:
         items = list(self.queue.queue)
+        QUEUE_PATH.parent.mkdir(parents=True, exist_ok=True)
         QUEUE_PATH.write_text(json.dumps(items, indent=2), encoding="utf-8")
 
     # ------------------------------------------------------------------
