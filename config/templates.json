@@ -14,5 +14,609 @@
       "Pricing was fair and transparent.",
       "Would definitely recommend to others."
     ]
+  },
+  {
+    "name": "Booking",
+    "filename": "booking.json"
+  },
+  {
+    "name": "Kotaku",
+    "filename": "kotaku.json"
+  },
+  {
+    "name": "Netflix",
+    "filename": "netflix.json"
+  },
+  {
+    "name": "Product Hunt",
+    "filename": "product_hunt.json"
+  },
+  {
+    "name": "Medium",
+    "filename": "medium.json"
+  },
+  {
+    "name": "Cbs News",
+    "filename": "cbs_news.json"
+  },
+  {
+    "name": "Wired",
+    "filename": "wired.json"
+  },
+  {
+    "name": "Best Buy",
+    "filename": "best_buy.json"
+  },
+  {
+    "name": "Expedia",
+    "filename": "expedia.json"
+  },
+  {
+    "name": "Newegg",
+    "filename": "newegg.json"
+  },
+  {
+    "name": "Imgur",
+    "filename": "imgur.json"
+  },
+  {
+    "name": "Kayak",
+    "filename": "kayak.json"
+  },
+  {
+    "name": "Tidal",
+    "filename": "tidal.json"
+  },
+  {
+    "name": "Nbc News",
+    "filename": "nbc_news.json"
+  },
+  {
+    "name": "Microsoft Store",
+    "filename": "microsoft_store.json"
+  },
+  {
+    "name": "Imdb",
+    "filename": "imdb.json"
+  },
+  {
+    "name": "Odnoklassniki",
+    "filename": "odnoklassniki.json"
+  },
+  {
+    "name": "Samsung",
+    "filename": "samsung.json"
+  },
+  {
+    "name": "Npr",
+    "filename": "npr.json"
+  },
+  {
+    "name": "Yelp",
+    "filename": "yelp.json"
+  },
+  {
+    "name": "Qq",
+    "filename": "qq.json"
+  },
+  {
+    "name": "Guardian",
+    "filename": "guardian.json"
+  },
+  {
+    "name": "Twitch",
+    "filename": "twitch.json"
+  },
+  {
+    "name": "Etsy",
+    "filename": "etsy.json"
+  },
+  {
+    "name": "Github",
+    "filename": "github.json"
+  },
+  {
+    "name": "Sephora",
+    "filename": "sephora.json"
+  },
+  {
+    "name": "Prime Video",
+    "filename": "prime_video.json"
+  },
+  {
+    "name": "Vk",
+    "filename": "vk.json"
+  },
+  {
+    "name": "Linkedin",
+    "filename": "linkedin.json"
+  },
+  {
+    "name": "Foot Locker",
+    "filename": "foot_locker.json"
+  },
+  {
+    "name": "Jcpenney",
+    "filename": "jcpenney.json"
+  },
+  {
+    "name": "Lowes",
+    "filename": "lowes.json"
+  },
+  {
+    "name": "Home Depot",
+    "filename": "home_depot.json"
+  },
+  {
+    "name": "Stack Overflow",
+    "filename": "stack_overflow.json"
+  },
+  {
+    "name": "Rakuten",
+    "filename": "rakuten.json"
+  },
+  {
+    "name": "Yandex",
+    "filename": "yandex.json"
+  },
+  {
+    "name": "Walmart",
+    "filename": "walmart.json"
+  },
+  {
+    "name": "Usa Today",
+    "filename": "usa_today.json"
+  },
+  {
+    "name": "Agoda",
+    "filename": "agoda.json"
+  },
+  {
+    "name": "Travelocity",
+    "filename": "travelocity.json"
+  },
+  {
+    "name": "Overstock",
+    "filename": "overstock.json"
+  },
+  {
+    "name": "Disneyplus",
+    "filename": "disneyplus.json"
+  },
+  {
+    "name": "Pinterest",
+    "filename": "pinterest.json"
+  },
+  {
+    "name": "Crunchyroll",
+    "filename": "crunchyroll.json"
+  },
+  {
+    "name": "The Verge",
+    "filename": "the_verge.json"
+  },
+  {
+    "name": "Hacker News",
+    "filename": "hacker_news.json"
+  },
+  {
+    "name": "Game Informer",
+    "filename": "game_informer.json"
+  },
+  {
+    "name": "Pandora",
+    "filename": "pandora.json"
+  },
+  {
+    "name": "Macys",
+    "filename": "macys.json"
+  },
+  {
+    "name": "Spotify",
+    "filename": "spotify.json"
+  },
+  {
+    "name": "Postmates",
+    "filename": "postmates.json"
+  },
+  {
+    "name": "9Gag",
+    "filename": "9gag.json"
+  },
+  {
+    "name": "Bloomingdales",
+    "filename": "bloomingdales.json"
+  },
+  {
+    "name": "Peacock Tv",
+    "filename": "peacock_tv.json"
+  },
+  {
+    "name": "Skyscanner",
+    "filename": "skyscanner.json"
+  },
+  {
+    "name": "Google",
+    "filename": "google.json"
+  },
+  {
+    "name": "Bbc",
+    "filename": "bbc.json"
+  },
+  {
+    "name": "Kohls",
+    "filename": "kohls.json"
+  },
+  {
+    "name": "Telegraph",
+    "filename": "telegraph.json"
+  },
+  {
+    "name": "Techcrunch",
+    "filename": "techcrunch.json"
+  },
+  {
+    "name": "Zappos",
+    "filename": "zappos.json"
+  },
+  {
+    "name": "Devto",
+    "filename": "devto.json"
+  },
+  {
+    "name": "Polygon",
+    "filename": "polygon.json"
+  },
+  {
+    "name": "Weibo",
+    "filename": "weibo.json"
+  },
+  {
+    "name": "Forbes",
+    "filename": "forbes.json"
+  },
+  {
+    "name": "Lyft",
+    "filename": "lyft.json"
+  },
+  {
+    "name": "Nytimes",
+    "filename": "nytimes.json"
+  },
+  {
+    "name": "Ulta",
+    "filename": "ulta.json"
+  },
+  {
+    "name": "Orbitz",
+    "filename": "orbitz.json"
+  },
+  {
+    "name": "Deezer",
+    "filename": "deezer.json"
+  },
+  {
+    "name": "Asus",
+    "filename": "asus.json"
+  },
+  {
+    "name": "Mashable",
+    "filename": "mashable.json"
+  },
+  {
+    "name": "Saks Fifth Avenue",
+    "filename": "saks_fifth_avenue.json"
+  },
+  {
+    "name": "Youtube",
+    "filename": "youtube.json"
+  },
+  {
+    "name": "Grubhub",
+    "filename": "grubhub.json"
+  },
+  {
+    "name": "Adidas",
+    "filename": "adidas.json"
+  },
+  {
+    "name": "Amazon",
+    "filename": "amazon.json"
+  },
+  {
+    "name": "Nordstrom",
+    "filename": "nordstrom.json"
+  },
+  {
+    "name": "Engadget",
+    "filename": "engadget.json"
+  },
+  {
+    "name": "Alibaba",
+    "filename": "alibaba.json"
+  },
+  {
+    "name": "Reuters",
+    "filename": "reuters.json"
+  },
+  {
+    "name": "Nike",
+    "filename": "nike.json"
+  },
+  {
+    "name": "Wsj",
+    "filename": "wsj.json"
+  },
+  {
+    "name": "Soundcloud",
+    "filename": "soundcloud.json"
+  },
+  {
+    "name": "Tripadvisor",
+    "filename": "tripadvisor.json"
+  },
+  {
+    "name": "Letterboxd",
+    "filename": "letterboxd.json"
+  },
+  {
+    "name": "Vice",
+    "filename": "vice.json"
+  },
+  {
+    "name": "Taobao",
+    "filename": "taobao.json"
+  },
+  {
+    "name": "Flickr",
+    "filename": "flickr.json"
+  },
+  {
+    "name": "Behance",
+    "filename": "behance.json"
+  },
+  {
+    "name": "Gizmodo",
+    "filename": "gizmodo.json"
+  },
+  {
+    "name": "Hp",
+    "filename": "hp.json"
+  },
+  {
+    "name": "Cnn",
+    "filename": "cnn.json"
+  },
+  {
+    "name": "Washington Post",
+    "filename": "washington_post.json"
+  },
+  {
+    "name": "Tmall",
+    "filename": "tmall.json"
+  },
+  {
+    "name": "Flipkart",
+    "filename": "flipkart.json"
+  },
+  {
+    "name": "Bitbucket",
+    "filename": "bitbucket.json"
+  },
+  {
+    "name": "Snapdeal",
+    "filename": "snapdeal.json"
+  },
+  {
+    "name": "Vimeo",
+    "filename": "vimeo.json"
+  },
+  {
+    "name": "Costco",
+    "filename": "costco.json"
+  },
+  {
+    "name": "Uber Eats",
+    "filename": "uber_eats.json"
+  },
+  {
+    "name": "Twitter",
+    "filename": "twitter.json"
+  },
+  {
+    "name": "Paramountplus",
+    "filename": "paramountplus.json"
+  },
+  {
+    "name": "Aliexpress",
+    "filename": "aliexpress.json"
+  },
+  {
+    "name": "Gitlab",
+    "filename": "gitlab.json"
+  },
+  {
+    "name": "Instagram",
+    "filename": "instagram.json"
+  },
+  {
+    "name": "Tiktok",
+    "filename": "tiktok.json"
+  },
+  {
+    "name": "Bloomberg",
+    "filename": "bloomberg.json"
+  },
+  {
+    "name": "Stack Exchange",
+    "filename": "stack_exchange.json"
+  },
+  {
+    "name": "Baidu",
+    "filename": "baidu.json"
+  },
+  {
+    "name": "Wechat",
+    "filename": "wechat.json"
+  },
+  {
+    "name": "Dell",
+    "filename": "dell.json"
+  },
+  {
+    "name": "Gamespot",
+    "filename": "gamespot.json"
+  },
+  {
+    "name": "Open Library",
+    "filename": "open_library.json"
+  },
+  {
+    "name": "Instacart",
+    "filename": "instacart.json"
+  },
+  {
+    "name": "Apple",
+    "filename": "apple.json"
+  },
+  {
+    "name": "Hulu",
+    "filename": "hulu.json"
+  },
+  {
+    "name": "Quora",
+    "filename": "quora.json"
+  },
+  {
+    "name": "Target",
+    "filename": "target.json"
+  },
+  {
+    "name": "Trivago",
+    "filename": "trivago.json"
+  },
+  {
+    "name": "Mercado Libre",
+    "filename": "mercado_libre.json"
+  },
+  {
+    "name": "Sina",
+    "filename": "sina.json"
+  },
+  {
+    "name": "Dribbble",
+    "filename": "dribbble.json"
+  },
+  {
+    "name": "Sony",
+    "filename": "sony.json"
+  },
+  {
+    "name": "Ebay",
+    "filename": "ebay.json"
+  },
+  {
+    "name": "Wayfair",
+    "filename": "wayfair.json"
+  },
+  {
+    "name": "500Px",
+    "filename": "500px.json"
+  },
+  {
+    "name": "Sohu",
+    "filename": "sohu.json"
+  },
+  {
+    "name": "Lenovo",
+    "filename": "lenovo.json"
+  },
+  {
+    "name": "Metacritic",
+    "filename": "metacritic.json"
+  },
+  {
+    "name": "Mailru",
+    "filename": "mailru.json"
+  },
+  {
+    "name": "Airbnb",
+    "filename": "airbnb.json"
+  },
+  {
+    "name": "Uber",
+    "filename": "uber.json"
+  },
+  {
+    "name": "Shopify",
+    "filename": "shopify.json"
+  },
+  {
+    "name": "Tumblr",
+    "filename": "tumblr.json"
+  },
+  {
+    "name": "Hotels",
+    "filename": "hotels.json"
+  },
+  {
+    "name": "Fox News",
+    "filename": "fox_news.json"
+  },
+  {
+    "name": "Ign",
+    "filename": "ign.json"
+  },
+  {
+    "name": "Abc News",
+    "filename": "abc_news.json"
+  },
+  {
+    "name": "Facebook",
+    "filename": "facebook.json"
+  },
+  {
+    "name": "Buzzfeed",
+    "filename": "buzzfeed.json"
+  },
+  {
+    "name": "Hbo",
+    "filename": "hbo.json"
+  },
+  {
+    "name": "Rotten Tomatoes",
+    "filename": "rotten_tomatoes.json"
+  },
+  {
+    "name": "Giphy",
+    "filename": "giphy.json"
+  },
+  {
+    "name": "Doordash",
+    "filename": "doordash.json"
+  },
+  {
+    "name": "Priceline",
+    "filename": "priceline.json"
+  },
+  {
+    "name": "Time",
+    "filename": "time.json"
+  },
+  {
+    "name": "Goodreads",
+    "filename": "goodreads.json"
+  },
+  {
+    "name": "Reddit",
+    "filename": "reddit.json"
+  },
+  {
+    "name": "Dailymotion",
+    "filename": "dailymotion.json"
+  },
+  {
+    "name": "Grab",
+    "filename": "grab.json"
   }
 ]
