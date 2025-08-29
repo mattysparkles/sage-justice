@@ -35,3 +35,56 @@ def test_scheduler_rotate_mode(tmp_path, monkeypatch):
     scheduler.stop()
     assert Dummy.calls[0][0] == "A"
     assert Dummy.calls[1][0] == "B"
+
+
+def test_project_skip_for_constraints(tmp_path, monkeypatch):
+    sched_dir = tmp_path / "scheds"
+    sched_dir.mkdir()
+    now = datetime.now().isoformat()
+    day = datetime.now().weekday()
+    hour = datetime.now().hour
+    (sched_dir / "p1.json").write_text(
+        json.dumps(
+            [
+                {
+                    "prompt": "A",
+                    "days": [day],
+                    "hours": [hour],
+                    "offset": 0,
+                    "next_run": now,
+                    "status": "Queued",
+                }
+            ]
+        )
+    )
+    (sched_dir / "p2.json").write_text(
+        json.dumps(
+            [
+                {
+                    "prompt": "B",
+                    "days": [day],
+                    "hours": [hour],
+                    "offset": 0,
+                    "next_run": now,
+                    "status": "Queued",
+                }
+            ]
+        )
+    )
+    Dummy.calls = []
+    monkeypatch.setattr(schedule_engine, "generate_reviews", Dummy.generate)
+
+    def fake_enforce(project: str) -> bool:
+        return project == "p1"
+
+    monkeypatch.setattr(schedule_engine.project_hub, "enforce_constraints", fake_enforce)
+    scheduler = ReviewScheduler(
+        schedule_path=str(sched_dir),
+        mode="rotate",
+        project_mode="all",
+        tick_seconds=0.01,
+    )
+    scheduler.start()
+    time.sleep(0.05)
+    scheduler.stop()
+    assert Dummy.calls == [("A", None)]

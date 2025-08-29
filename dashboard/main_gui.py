@@ -991,68 +991,122 @@ class GuardianDeck(tk.Tk):
 
     # --- SCHEDULER ----------------------------------------------------
     def create_scheduler_tab(self, frame: ttk.Frame) -> None:
-        columns = ("site", "time", "status", "repeat")
+        columns = ("project", "prompt", "next_run", "status", "offset")
         self.schedule_tree = ttk.Treeview(frame, columns=columns, show="headings")
-        for col in columns:
-            self.schedule_tree.heading(col, text=col.title())
+        headings = ["Project", "Prompt", "Next Run", "Status", "Offset"]
+        for col, head in zip(columns, headings):
+            self.schedule_tree.heading(col, text=head)
         self.schedule_tree.pack(fill="both", expand=True, side="left", padx=5, pady=5)
 
         controls = ttk.Frame(frame)
         controls.pack(side="left", fill="y", padx=5, pady=5)
-        ttk.Button(controls, text="Add Scheduled Job", command=self.add_schedule_job).pack(fill="x", pady=2)
-        ttk.Button(controls, text="Remove Selected", command=self.remove_schedule).pack(fill="x", pady=2)
-        ttk.Button(controls, text="Toggle Scheduler", command=self.toggle_scheduler).pack(fill="x", pady=2)
-        self.scheduler_banner = ttk.Label(controls, text="Scheduler: Stopped", foreground="red")
+        ttk.Button(controls, text="Add Task", command=self.add_schedule_job).pack(
+            fill="x", pady=2
+        )
+        ttk.Button(controls, text="Remove Selected", command=self.remove_schedule).pack(
+            fill="x", pady=2
+        )
+
+        mode_frame = ttk.LabelFrame(controls, text="Project Mode")
+        mode_frame.pack(fill="x", pady=5)
+        self.project_mode_var = tk.StringVar(value=self.scheduler.project_mode)
+        mode_box = ttk.Combobox(
+            mode_frame,
+            values=["rotate", "random", "all"],
+            textvariable=self.project_mode_var,
+            state="readonly",
+        )
+        mode_box.pack(fill="x", padx=2, pady=2)
+        mode_box.bind(
+            "<<ComboboxSelected>>",
+            lambda e: setattr(self.scheduler, "project_mode", self.project_mode_var.get()),
+        )
+
+        ttk.Button(controls, text="Play", command=self.play_scheduler).pack(
+            fill="x", pady=2
+        )
+        ttk.Button(controls, text="Pause", command=self.pause_scheduler).pack(
+            fill="x", pady=2
+        )
+        ttk.Button(controls, text="Stop", command=self.stop_scheduler).pack(
+            fill="x", pady=2
+        )
+        self.scheduler_banner = ttk.Label(
+            controls, text="Scheduler: Stopped", foreground="red"
+        )
         self.scheduler_banner.pack(anchor="w", pady=5)
 
+        log_frame = ttk.LabelFrame(controls, text="Recent Failures")
+        log_frame.pack(fill="both", expand=True, pady=5)
+        self.schedule_log = ScrolledText(log_frame, height=10)
+        self.schedule_log.pack(fill="both", expand=True)
+        ttk.Button(log_frame, text="Refresh Log", command=self.refresh_scheduler_log).pack(
+            fill="x", pady=2
+        )
+
         self.refresh_schedule_table()
+        self.refresh_scheduler_log()
 
     def refresh_schedule_table(self) -> None:
         for item in getattr(self, "schedule_tree").get_children():
             self.schedule_tree.delete(item)
-        for idx, task in enumerate(self.scheduler.schedule):
-            repeat = "Y" if task.get("interval_minutes") else "N"
-            self.schedule_tree.insert(
-                "",
-                "end",
-                iid=str(idx),
-                values=(task.get("site"), task.get("next_run"), task.get("status"), repeat),
-            )
+        for project, tasks in self.scheduler.project_schedules.items():
+            for idx, task in enumerate(tasks):
+                iid = f"{project}:{idx}"
+                self.schedule_tree.insert(
+                    "",
+                    "end",
+                    iid=iid,
+                    values=(
+                        project,
+                        task.get("prompt"),
+                        task.get("next_run"),
+                        task.get("status"),
+                        task.get("offset", 0),
+                    ),
+                )
 
     def add_schedule_job(self) -> None:
-        site = simpledialog.askstring("Scheduled Job", "Site:")
-        if not site:
-            return
-        prompt = simpledialog.askstring("Scheduled Job", "Prompt:") or ""
-        interval = simpledialog.askinteger("Scheduled Job", "Interval minutes", minvalue=1, initialvalue=60)
-        task = {
-            "site": site,
-            "prompt": prompt,
-            "interval_minutes": interval,
-            "next_run": self.scheduler.get_next_run(interval),
-            "status": "Queued",
-        }
-        self.scheduler.schedule.append(task)
-        self.scheduler.save_schedule()
-        self.refresh_schedule_table()
+        project = simpledialog.askstring("Scheduled Task", "Project:") or "default"
+        prompt = simpledialog.askstring("Scheduled Task", "Prompt:") or ""
+        offset = simpledialog.askinteger(
+            "Scheduled Task", "Offset minutes", minvalue=0, initialvalue=0
+        )
+        if prompt:
+            self.scheduler.add_task(prompt=prompt, project=project, offset=offset)
+            self.refresh_schedule_table()
 
     def remove_schedule(self) -> None:
         sel = self.schedule_tree.selection()
         if not sel:
             return
-        index = int(sel[0])
-        if 0 <= index < len(self.scheduler.schedule):
-            del self.scheduler.schedule[index]
-            self.scheduler.save_schedule()
-            self.refresh_schedule_table()
+        project, index = sel[0].split(":")
+        self.scheduler.remove_task(project, int(index))
+        self.refresh_schedule_table()
 
-    def toggle_scheduler(self) -> None:
+    def play_scheduler(self) -> None:
+        if not self.scheduler.running:
+            self.scheduler.start()
+        elif self.scheduler.paused:
+            self.scheduler.resume()
+        self.scheduler_banner.config(text="Scheduler: Running", foreground="green")
+
+    def pause_scheduler(self) -> None:
+        if self.scheduler.running:
+            self.scheduler.pause()
+            self.scheduler_banner.config(text="Scheduler: Paused", foreground="orange")
+
+    def stop_scheduler(self) -> None:
         if self.scheduler.running:
             self.scheduler.stop()
-            self.scheduler_banner.config(text="Scheduler: Stopped", foreground="red")
-        else:
-            self.scheduler.start()
-            self.scheduler_banner.config(text="Scheduler: Running", foreground="green")
+        self.scheduler_banner.config(text="Scheduler: Stopped", foreground="red")
+
+    def refresh_scheduler_log(self) -> None:
+        self.schedule_log.delete("1.0", "end")
+        log_path = Path("logs/scheduler.log")
+        if log_path.exists():
+            lines = log_path.read_text(encoding="utf-8").splitlines()[-50:]
+            self.schedule_log.insert("end", "\n".join(lines))
 
     # --- JOBS --------------------------------------------------------
     def create_jobs_tab(self, frame: ttk.Frame) -> None:
