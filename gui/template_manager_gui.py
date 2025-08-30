@@ -5,6 +5,7 @@ from pathlib import Path
 from tkinter import messagebox, ttk, filedialog, scrolledtext
 
 import requests
+from gui.template_capture_gui import TemplateCapture
 
 TEMPLATES_PATH = Path("config/templates.json")
 COMMUNITY_INDEX_URL = (
@@ -91,6 +92,7 @@ class TemplateManagerFrame(ttk.Frame):
         ttk.Button(btns, text="Duplicate", command=self._duplicate_template).pack(side="left", padx=4)
         ttk.Button(btns, text="Delete", command=self._delete_template).pack(side="left")
         ttk.Button(btns, text="Import", command=self._import_template).pack(side="left", padx=4)
+        ttk.Button(btns, text="Capture", command=self._capture_template).pack(side="left", padx=4)
         ttk.Button(btns, text="Export", command=self._export_template).pack(side="left")
 
         right = ttk.Frame(parent)
@@ -270,6 +272,9 @@ class TemplateManagerFrame(ttk.Frame):
             return
         with open(path, "w", encoding="utf-8") as f:
             json.dump(tmpl, f, indent=2)
+
+    def _capture_template(self) -> None:
+        TemplateCapture(self)
 
     # ------------------------------------------------------------------
     # Community operations
