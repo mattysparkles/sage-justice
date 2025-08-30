@@ -199,7 +199,10 @@ class GuardianDeck(tk.Tk):
         self.reviews = []
 
     def run_generation(self) -> None:
-        tmpl = getattr(self, "template_options", {}).get(self.template_var.get())
+        tmpl_name = self.template_var.get()
+        tmpl = None
+        if tmpl_name and tmpl_name != "<None>":
+            tmpl = getattr(self, "template_options", {}).get(tmpl_name)
         count = self.count_var.get()
         min_star = self.min_star_var.get()
         max_star = self.max_star_var.get()
@@ -280,12 +283,9 @@ class GuardianDeck(tk.Tk):
     def refresh_template_dropdown(self) -> None:
         templates = self.load_templates_list()
         self.template_options = {t["name"]: t for t in templates}
-        values = list(self.template_options.keys())
+        values = ["<None>"] + list(self.template_options.keys())
         self.template_box["values"] = values
-        if values:
-            self.template_var.set(values[0])
-        else:
-            self.template_var.set("")
+        self.template_var.set("<None>")
 
     def load_projects_list(self) -> list[str]:
         return project_hub.list_projects()
